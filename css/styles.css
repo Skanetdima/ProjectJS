@@ -1,0 +1,73 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  touch-action: none;
+}
+
+.menu-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 3; /* Увеличим z-index для меню */
+}
+
+.character-selection {
+  display: flex;
+  gap: 2rem;
+}
+
+.character-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.character-circle:hover {
+  transform: scale(1.1);
+  border-color: white;
+}
+
+/* Цвета кружков */
+.red {
+  background-color: #ff4444;
+}
+.blue {
+  background-color: #4444ff;
+}
+.yellow {
+  background-color: #ffff44;
+}
+.green {
+  background-color: #44ff44;
+}
+
+#game-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  background-color: #000;
+  display: none; /* Скрываем канвас по умолчанию */
+}
+
+.joystick-container {
+  position: fixed;
+  bottom: 20px; /* Уменьшаем отступ снизу */
+  left: 50px;
+  width: 120px;
+  height: 120px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.5); /* Чёрный фон с прозрачностью */
+  border-radius: 20px;
+  display: none; /* Скрываем джойстик по умолчанию */
+}

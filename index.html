@@ -3,9 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Escape Game</title>
+    <title>Character Select & Joystick Demo</title>
+    <link rel="stylesheet" href="./css/styles.css" />
   </head>
   <body>
-    <script src="script.js"></script>
+    <div id="menu-container" class="menu-container">
+      <div class="character-selection">
+        <div class="character-circle red" data-color="red"></div>
+        <div class="character-circle blue" data-color="blue"></div>
+        <div class="character-circle yellow" data-color="yellow"></div>
+        <div class="character-circle green" data-color="green"></div>
+      </div>
+    </div>
+    <canvas id="game-canvas"></canvas>
+    <div id="joystick-container" class="joystick-container"></div>
+    <script type="module" src="./js/main.js"></script>
   </body>
 </html>
