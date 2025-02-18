@@ -20,6 +20,7 @@ export class Joystick {
       backgroundColor: 'rgba(255, 255, 255, 0.2)',
       position: 'absolute',
       display: 'none',
+      transform: 'translate(-50%, -50%)', // Center the base perfectly
     });
 
     Object.assign(this.joystickHandle.style, {
@@ -28,8 +29,9 @@ export class Joystick {
       borderRadius: '50%',
       backgroundColor: 'rgba(255, 255, 255, 0.5)',
       position: 'absolute',
-      left: '30px',
-      top: '30px',
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%)', // Center the handle initially
     });
 
     this.joystickBase.appendChild(this.joystickHandle);
@@ -38,24 +40,34 @@ export class Joystick {
 
   setupEventListeners() {
     const handleStart = (e) => {
+      e.preventDefault();
       this.isActive = true;
       this.joystickBase.style.display = 'block';
-      const rect = this.container.getBoundingClientRect();
-      this.baseX = rect.left + 60;
-      this.baseY = rect.top + 60;
+      
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      // Position joystick base at touch point
+      this.joystickBase.style.left = `${clientX}px`;
+      this.joystickBase.style.top = `${clientY}px`;
+
+      // Store center position (same as base position due to transform)
+      this.baseX = clientX;
+      this.baseY = clientY;
 
       this.moveHandle(e);
     };
 
     const handleMove = (e) => {
       if (!this.isActive) return;
+      e.preventDefault();
       this.moveHandle(e);
     };
 
     const handleEnd = () => {
       this.isActive = false;
       this.joystickBase.style.display = 'none';
-      this.joystickHandle.style.transform = 'translate(30px, 30px)';
+      this.joystickHandle.style.transform = 'translate(-50%, -50%)';
       this.onMove({ x: 0, y: 0 });
     };
 
@@ -65,16 +77,19 @@ export class Joystick {
     document.addEventListener('mouseup', handleEnd);
 
     // Touch events
-    this.container.addEventListener('touchstart', (e) => handleStart(e.touches[0]));
-    document.addEventListener('touchmove', (e) => handleMove(e.touches[0]));
+    this.container.addEventListener('touchstart', handleStart, { passive: false });
+    document.addEventListener('touchmove', handleMove, { passive: false });
     document.addEventListener('touchend', handleEnd);
   }
 
   moveHandle(e) {
-    const x = e.clientX - this.baseX;
-    const y = e.clientY - this.baseY;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    const x = clientX - this.baseX;
+    const y = clientY - this.baseY;
     const distance = Math.sqrt(x * x + y * y);
-    const maxDistance = 30; // Увеличиваем радиус движения джойстика
+    const maxDistance = 60; // Matches the joystick base radius
 
     const angle = Math.atan2(y, x);
     const limitedDistance = Math.min(distance, maxDistance);
@@ -82,7 +97,7 @@ export class Joystick {
     const moveX = limitedDistance * Math.cos(angle);
     const moveY = limitedDistance * Math.sin(angle);
 
-    this.joystickHandle.style.transform = `translate(${moveX + 30}px, ${moveY + 30}px)`;
+    this.joystickHandle.style.transform = `translate(${moveX}px, ${moveY}px) translate(-50%, -50%)`;
 
     const normalizedX = moveX / maxDistance;
     const normalizedY = moveY / maxDistance;

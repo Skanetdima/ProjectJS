@@ -51,6 +51,16 @@
   background-color: #44ff44;
 }
 
+#joystick-container {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  touch-action: none;
+  z-index: 2;
+}
+
 #game-canvas {
   position: fixed;
   top: 0;
@@ -60,14 +70,13 @@
   display: none; /* Скрываем канвас по умолчанию */
 }
 
-.joystick-container {
+/* .joystick-container {
   position: fixed;
-  bottom: 20px; /* Уменьшаем отступ снизу */
+  bottom: 20px; 
   left: 50px;
   width: 120px;
   height: 120px;
-  z-index: 2;
-  background: rgba(0, 0, 0, 0.5); /* Чёрный фон с прозрачностью */
+  background: rgba(0, 0, 0, 0.5); 
   border-radius: 20px;
-  display: none; /* Скрываем джойстик по умолчанию */
-}
+  display: none; 
+} */
