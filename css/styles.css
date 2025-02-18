@@ -71,3 +71,108 @@
   border-radius: 20px;
   display: none; /* Скрываем джойстик по умолчанию */
 }
+
+
+@import url('https://fonts.googleapis.com/css2?family=Afacad+Flux&family=Parkinsans:wght@300..800&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+
+body {
+    background-color: rgb(255, 152, 152);
+}
+
+.menu {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    gap: 5em;
+    padding-top: 30%;
+}
+
+.smallMenuButton {
+    height: 8em;
+    width: 8em;
+    border-radius: 50%;
+    background-color: rgb(14, 209, 14);
+    border: 0.4em solid rgb(212, 212, 212);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.startButton {
+    height: 12em;
+    width: 12em;
+    border-radius: 50%;
+    background-color: rgb(14, 209, 14);
+    border: 0.6em solid rgb(212, 212, 212);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.playIcon {
+    width: 0;
+    height: 0;
+    border-top: 2em solid transparent;
+    border-bottom: 2em solid transparent;
+    border-left: 3em solid white;
+    margin-left: 0.5em;
+    transition: transform 0.2s ease;
+}
+
+.startButton:hover {
+    background-color: rgb(73, 225, 73);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+}
+
+.startButton:hover .playIcon {
+    transform: scale(1.2);
+}
+
+.smallMenuButton:hover {
+    background-color: rgb(73, 225, 73);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+}
+
+.arrowButton {
+    width: 5em;
+    height: 3em;
+    background-color: rgb(14, 209, 14);
+    border: 0.2em solid rgb(212, 212, 212);
+    border-radius: 45%;
+    margin-left: 1em;
+    margin-top: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.arrowButton:hover {
+    background-color: rgb(73, 225, 73);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.choosePlayers {
+    display: none;
+    background-color: aqua;
+    width: 50em;
+    height: 35em;
+    z-index: 1;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.playerText{
+    font-size: 3em; 
+    color: white;
+    font-family: Rubik; 
+    font-weight: 500;
+}
+

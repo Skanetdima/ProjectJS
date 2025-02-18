@@ -7,7 +7,33 @@
     <link rel="stylesheet" href="./css/styles.css" />
   </head>
   <body>
-    <div id="menu-container" class="menu-container">
+
+
+
+    <div class="choosePlayers" style="display: none; background-color: aqua; width: 50em; height: 35em; z-index: 1; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+      <div class="arrowButton" onclick="arrowButton()"><img src="/images/arrowIcon.png" style="width: 3em; height: 2.5em;"></div>
+
+          <div style="display: flex;align-items:center;margin-top: 3em;justify-content: center; flex-direction: row;gap: 10em;margin-left: 3em;margin-right: 3em;">
+              <button class="smallMenuButton" id="onePlayer" style="height: 12em; width: 12em;"><h1 class="playerText" style="font-size: 5em;">1P</h1></button>
+              <button class="smallMenuButton" id="twoPlayers" style="height: 12em; width: 12em;"><h1 class="playerText" style="font-size: 5em;">2P</h1></button>
+          </div>
+
+          <div style="display: flex; align-items:center;justify-content: center;margin-top: 5em;flex-direction: row;gap: 10em; margin-left: 3em;margin-right: 3em;">
+              <button class="smallMenuButton" id="threePlayers" style="height: 12em; width: 12em;"><h1 class="playerText" style="font-size: 5em;">3P</h1></button>
+              <button class="smallMenuButton" id="fourPlayers" style="height: 12em; width: 12em;"><h1 class="playerText" style="font-size: 5em;">4P</h1></button>
+          </div>
+
+      </div>
+
+  <div class="menu">
+      <button class="smallMenuButton" onclick="changeImage()"><img src="/images/soundOn4.png" style="width: 4em; height: 4em;"></button>
+      <button class="startButton"><span class="playIcon"></span></button>
+      <button class="smallMenuButton" onclick="choosePlayers()"><h1 class="playerText">1P</h1></button>
+  </div>
+
+
+
+    <!-- <div id="menu-container" class="menu-container">
       <div class="character-selection">
         <div class="character-circle red" data-color="red"></div>
         <div class="character-circle blue" data-color="blue"></div>
@@ -16,7 +42,9 @@
       </div>
     </div>
     <canvas id="game-canvas"></canvas>
-    <div id="joystick-container" class="joystick-container"></div>
+    <div id="joystick-container" class="joystick-container"></div> -->
     <script type="module" src="./js/main.js"></script>
+
+
   </body>
 </html>
