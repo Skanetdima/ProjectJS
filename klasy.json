@@ -1,0 +1,49 @@
+{
+   "klasa":[
+    {
+        "idKlasy": 1,
+        "nazwaPrzedmiotu": "Matematyka",
+        "pytania": ["Rozwiąż równanie ...: ", "Wykres funkcji ... wygląda:", "(a+b)^2(a-b)^2 =", "log3​(x+2)+log3​(x−1)=2"]
+    },
+    {
+        "idKlasy": 2,
+        "nazwaPrzedmiotu": "Język Polski",
+        "pytania": ["Jakie są cechy tworczości Szekspira?", "Motyw memento mori jest charakterystyczny dla epoki:", "Prawdziwe nazwisko Moliera to:", "Kto napisał 'Opowieść Wigilijną'?"]
+    },
+    {
+        "idKlasy": 3,
+        "nazwaPrzedmiotu": "Język Angielski",
+        "pytania": ["Translate : Impartial", "Translate: Reliable", "Translate: Viable", "Synonym for: significant"]
+    },
+    {
+        "idKlasy": 4,
+        "nazwaPrzedmiotu": "Geografia",
+        "pytania": ["Największe jezioro świata to: ", "Największa wyspa świata: ", "Jaki kraj wydobywa najwięcej diamentów?", "Państwo uznawane przez Polskę ale nie uznawane przez ONZ to: "]
+    },
+    {
+        "idKlasy": 5,
+        "nazwaPrzedmiotu": "Historia",
+        "pytania": ["Data rozpoczęcia I wojny światowej to:", "Który Król Polski panował najdłużej?", "Data upadku Cesarstwa Wschodniorzymskiego to:", "Kiedy odbyła się pierwsza Wolna Elekcja?"]
+    },
+    {
+        "idKlasy": 6,
+        "nazwaPrzedmiotu": "HiT",
+        "pytania": ["Pierwszy prezydent USA to: ", "Kiedy Polska wstąpiła do NATO?", "Data utworzenia Układu Warszawskiego to: ", "Pierwszy niekomunistyczny premier Polski to: "]
+    },
+    {
+        "idKlasy": 7,
+        "nazwaPrzedmiotu": "Bazy Danych",
+        "pytania": ["Kwerenda do dodania kolumny do tabeli:", "Prawidłowa kolejność w zapytaniu SELECT:", "Rozwiń skrót DBMS", "Kwerenda tworząca nowego uzytkownika z hasłem:"]
+    },
+    {
+        "idKlasy": 8,
+        "nazwaPrzedmiotu": "Programowanie Obiektowe",
+        "pytania": ["Przeciążenie funkcji to: ", "Wynikiem : 'int x = 5; cout << ++x + x++;', będzie: ", "W jaki sposób możemy dodać referencje do tabeli w atrybucie funkcji?", "Struct to:"]
+    },
+    {
+        "idKlasy": 9,
+        "nazwaPrzedmiotu": "Aplikacje internetowe",
+        "pytania": ["W jaki sposób możemy połączyć się z bazą danych SQL w języku PHP?", "Który to znacznik semantyczny?", "W jaki sposób w język JavaScript możemy uzyskać aktualną datę? ", "Co to jest tablica asocjacyjna w PHP?"]
+    }
+]   
+}
