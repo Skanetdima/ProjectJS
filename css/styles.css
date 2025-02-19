@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Afacad+Flux&family=Parkinsans:wght@300..800&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -73,7 +75,7 @@
 }
 
 
-@import url('https://fonts.googleapis.com/css2?family=Afacad+Flux&family=Parkinsans:wght@300..800&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+
 
 body {
     background-color: rgb(255, 152, 152);

@@ -18,7 +18,7 @@
   }
 
 
-  function changeImage() {
+  window.changeImage = function () {
     var img = document.querySelector(".smallMenuButton img"); 
     if (img.src.includes("/images/soundOn4.png")) {
         img.src = "/images/mute2.png"; 
@@ -27,17 +27,17 @@
     }
   }
 
-  function choosePlayers(){
+   window.choosePlayers = function(){
     var popup = document.querySelector(".choosePlayers")
     if(popup.style.display === "none"){
-        popup.style.display = "block"
+        popup.style.display = "block" 
     }
     else{
         popup.style.display = "none"
     }
   }
 
-  function arrowButton(){
+window.arrowButton = function(){
     var arrow = document.querySelector(".choosePlayers")
     arrow.style.display  = "none"
   }
