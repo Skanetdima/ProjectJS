@@ -1,4 +1,3 @@
-import { initializeMenu } from './menu.js';
-import { Game } from './game.js';
+import { initializeMenu } from './UI/menu.js';
 
 initializeMenu();

@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Character Select & Joystick Demo</title>
-    <link rel="stylesheet" href="./css/styles.css" />
+    <title>Character Game</title>
+    <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
     <div id="menu-container" class="menu-container">
@@ -15,8 +15,10 @@
         <div class="character-circle green" data-color="green"></div>
       </div>
     </div>
-    <canvas id="game-canvas"></canvas>
-    <div id="joystick-container" class="joystick-container"></div>
-    <script type="module" src="./js/main.js"></script>
+
+    <canvas id="game-canvas" style="display: none"></canvas>
+    <div id="joystick-container" style="display: none"></div>
+
+    <script type="module" src="js/main.js"></script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-import { Game } from './game.js';
+import { Game } from '../Core/Game.js';
 
 export function initializeMenu() {
   const menuContainer = document.getElementById('menu-container');
@@ -10,8 +10,8 @@ export function initializeMenu() {
     circle.addEventListener('click', () => {
       const color = circle.dataset.color;
       menuContainer.style.display = 'none';
-      canvas.style.display = 'block'; // Показываем канвас
-      joystickContainer.style.display = 'block'; // Показываем джойстик
+      canvas.style.display = 'block';
+      joystickContainer.style.display = 'block';
       new Game(color);
     });
   });
