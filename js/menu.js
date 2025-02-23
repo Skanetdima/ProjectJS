@@ -36,6 +36,15 @@
   //   }
   // }
 
+   // window.ifSoundOn = function () {
+  //   var img = document.querySelector(".smallMenuButton img"); 
+  //   if (img.src.includes("/images/soundOn4.png")) {
+  //       img.src = "/images/mute2.png"; 
+  //   } else {
+  //       img.src = "/images/soundOn4.png"; 
+  //   }
+  // }
+
    window.choosePlayers = function(){
     var popup = document.querySelector(".choosePlayers")
     if(popup.style.display === "none"){
