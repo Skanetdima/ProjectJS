@@ -9,10 +9,13 @@ export function initializeMenu() {
   circles.forEach((circle) => {
     circle.addEventListener('click', () => {
       const color = circle.dataset.color;
+
       menuContainer.style.display = 'none';
-      canvas.style.display = 'block'; // Показываем канвас
-      joystickContainer.style.display = 'block'; // Показываем джойстик
-      new Game(color);
+      canvas.style.display = 'block';
+      joystickContainer.style.display = 'block';
+
+      // Wait a frame to ensure canvas is visible before creating the game
+      requestAnimationFrame(() => new Game(color));
     });
   });
 }
