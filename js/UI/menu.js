@@ -1,3 +1,4 @@
+// menu.js
 import { Game } from '../Core/Game.js';
 
 export function initializeMenu() {
@@ -12,7 +13,10 @@ export function initializeMenu() {
       menuContainer.style.display = 'none';
       canvas.style.display = 'block';
       joystickContainer.style.display = 'block';
-      new Game(color);
+
+      // Создаём экземпляр Game
+      const gameInstance = new Game(color);
+      console.log('Game instance created:', gameInstance);
     });
   });
 }
