@@ -11,6 +11,11 @@ export class Game {
     this.backgroundImage.src = 'img/parter.svg'; // Adjust path as needed
     this.backgroundLoaded = false;
 
+    this.camera = {
+      x: 0,
+      y: 0,
+      zoom: 1.5 // Adjust this value to change the zoom level
+    };
     this.backgroundImage.onload = () => {
       this.backgroundLoaded = true;
       this.resizeCanvas();
@@ -28,18 +33,38 @@ export class Game {
   resizeCanvas() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
-    this.drawBackground(); // Redraw background after resize
   }
 
   handleJoystickMove(direction) {
     if (this.character) {
       this.character.move(direction);
+      this.updateCamera();
     }
   }
 
+  updateCamera() {
+    // Calculate the position where the camera should be centered
+    const targetX = this.character.x - this.canvas.width / (2 * this.camera.zoom);
+    const targetY = this.character.y - this.canvas.height / (2 * this.camera.zoom);
+
+    // Smoothly move the camera towards the target position
+    this.camera.x += (targetX - this.camera.x) * 0.1;
+    this.camera.y += (targetY - this.camera.y) * 0.1;
+  }
   drawBackground() {
     if (this.backgroundLoaded) {
-      this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
+      // Save the current context state
+      this.ctx.save();
+
+      // Scale and translate the context based on the camera
+      this.ctx.scale(this.camera.zoom, this.camera.zoom);
+      this.ctx.translate(-this.camera.x, -this.camera.y);
+
+      // Draw the background image
+      this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width / this.camera.zoom, this.canvas.height / this.camera.zoom);
+
+      // Restore the context state
+      this.ctx.restore();
     } else {
       // Draw loading screen or placeholder
       this.ctx.fillStyle = 'black';
@@ -54,9 +79,24 @@ export class Game {
   gameLoop() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawBackground();
+
     if (this.character) {
+      this.updateCamera();
+
+      // Save the current context state
+      this.ctx.save();
+
+      // Apply camera transformations
+      this.ctx.scale(this.camera.zoom, this.camera.zoom);
+      this.ctx.translate(-this.camera.x, -this.camera.y);
+
+      // Draw the character
       this.character.draw();
+
+      // Restore the context state
+      this.ctx.restore();
     }
+
     requestAnimationFrame(() => this.gameLoop());
   }
 }
