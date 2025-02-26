@@ -2,10 +2,10 @@ export class Character {
   constructor(ctx, color) {
     this.ctx = ctx;
     this.color = color;
+    this.radius = 20;
+    this.speed = 5;
     this.x = ctx.canvas.width / 2;
     this.y = ctx.canvas.height / 2;
-    this.radius = 30;
-    this.speed = 5;
   }
 
   move(direction) {

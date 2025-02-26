@@ -26,7 +26,7 @@ export class Game {
 
     this.backgroundImage.onerror = () => console.error('Failed to load background image.');
 
-    // Start game loop immediately
+    // Start game loop
     this.gameLoop();
   }
 
@@ -61,7 +61,8 @@ export class Game {
       this.ctx.translate(-this.camera.x, -this.camera.y);
 
       // Draw the background image
-      this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width / this.camera.zoom, this.canvas.height / this.camera.zoom);
+      // Use the original image dimensions instead of canvas dimensions
+      this.ctx.drawImage(this.backgroundImage, 0, 0, this.backgroundImage.width, this.backgroundImage.height);
 
       // Restore the context state
       this.ctx.restore();
