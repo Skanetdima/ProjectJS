@@ -18,22 +18,31 @@
   }
 
 
-// изменение картинки звука
-  window.soundSettingsImageLoud = function (button) {
-    var img = button.querySelector(".smallMenuButton img"); 
-    if (img.src.includes("/ProjectJS/images/soundOn4.png")) {
-        img.src = "/ProjectJS/images/mute2.png"; 
-    } else {
-        img.src = "/ProjectJS/images/soundOn4.png"; 
-    }
+// изменение картинки звука в настройках звука
+window.soundSettingsImageLoud = function (button) {
+  var img = button.querySelector(".smallMenuButton img"); 
+  var slider = document.getElementById("Effects-img");
+
+  if (img.src.includes("/ProjectJS/images/soundOn4.png")) {
+      img.src = "/ProjectJS/images/mute2.png"; 
+      slider.value = 0;
+  } 
+  else {
+      img.src = "/ProjectJS/images/soundOn4.png"; 
+      slider.value = 65;
   }
-// изменение картинки музыки
+}
+
+// изменение картинки музыки в настройках звука
   window.soundSettingsImageMusic = function (button) {
+    var slider = document.getElementById("Music-img");
     var img = button.querySelector(".smallMenuButton img"); 
     if (img.src.includes("/ProjectJS/images/music.png")) {
         img.src = "/ProjectJS/images/noMusic.png"; 
+        slider.value = 0;
     } else {
         img.src = "/ProjectJS/images/music.png"; 
+        slider.value = 65;
     }
   }
 
@@ -129,6 +138,8 @@ window.pickPlayersFour = function(){
     popup.style.display = "none"
   })
 }
+
+// otwieranie ustalenia dzwieku
   window.soundSettings = function(){
     var popup = document.querySelector(".soundSettings")
     if(popup.style.display === "none"){
