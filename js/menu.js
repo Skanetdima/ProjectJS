@@ -17,18 +17,31 @@
     });
   }
 
+// muzyka gry
+const backgroundMusic = new Audio("/muzyka/back1.mp3");
+backgroundMusic.loop = true;
+backgroundMusic.volume = 0.7;
+
+// Пытаемся запустить фоновую музыку
+// Если браузер блокирует автозапуск звука, ловим ошибку и выводим сообщение в консоль
+function startGame() {
+  backgroundMusic.play().catch(err => console.log("Автозапуск заблокирован:", err));
+  document.removeEventListener("click", startGame); // Убираем обработчик после первого клика
+}
+
+document.addEventListener("click", startGame);
 
 // изменение картинки звука в настройках звука
 window.soundSettingsImageLoud = function (button) {
   var img = button.querySelector(".smallMenuButton img"); 
   var slider = document.getElementById("Effects-img");
 
-  if (img.src.includes("/ProjectJS/images/soundOn4.png")) {
-      img.src = "/ProjectJS/images/mute2.png"; 
+  if (img.src.includes("/images/soundOn4.png")) {
+      img.src = "/images/mute2.png"; 
       slider.value = 0;
   } 
   else {
-      img.src = "/ProjectJS/images/soundOn4.png"; 
+      img.src = "/images/soundOn4.png"; 
       slider.value = 65;
   }
 }
@@ -37,11 +50,11 @@ window.soundSettingsImageLoud = function (button) {
   window.soundSettingsImageMusic = function (button) {
     var slider = document.getElementById("Music-img");
     var img = button.querySelector(".smallMenuButton img"); 
-    if (img.src.includes("/ProjectJS/images/music.png")) {
-        img.src = "/ProjectJS/images/noMusic.png"; 
+    if (img.src.includes("/images/music.png")) {
+        img.src = "/images/noMusic.png"; 
         slider.value = 0;
     } else {
-        img.src = "/ProjectJS/images/music.png"; 
+        img.src = "/images/music.png"; 
         slider.value = 65;
     }
   }
@@ -52,9 +65,9 @@ window.soundSettingsImageLoud = function (button) {
     var img = button.querySelector("img"); // Находим изображение внутри кнопки
 
     if (input.value == "0") {
-        img.src = "/ProjectJS/images/mute2.png";
+        img.src = "/images/mute2.png";
     } else {
-        img.src = "/ProjectJS/images/soundOn4.png";
+        img.src = "/images/soundOn4.png";
     }
 };
 
@@ -63,9 +76,9 @@ window.sliderSoundMusic = function(input) {
     var img = button.querySelector("img"); // Находим изображение внутри кнопки
 
     if (input.value == "0") {
-        img.src = "/ProjectJS/images/noMusic.png";
+        img.src = "/images/noMusic.png";
     } else {
-        img.src = "/ProjectJS/images/music.png";
+        img.src = "/images/music.png";
     }
 };
 

@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Character Select & Joystick Demo</title>
-    <link rel="stylesheet" href="/ProjectJS/css/styles.css" />
+    <link rel="stylesheet" href="/css/styles.css" />
   </head>
   <body>
 
 <div class="ekranGlowny">
     <!-- wybor ilosci graczy -->
     <div class="choosePlayers">
-      <div class="arrowButton" onclick="arrowButton()"><img src="/ProjectJS/images/arrowIcon.png" style="width: 3em; height: 2.5em;"></div>
+      <div class="arrowButton" onclick="arrowButton()"><img src="/images/arrowIcon.png" style="width: 3em; height: 2.5em;"></div>
 
           <div style="display: flex;align-items:center;margin-top: 3em;justify-content: center; flex-direction: row;gap: 10em;margin-left: 3em;margin-right: 3em;">
               <button class="smallMenuButton" id="onePlayer" onclick="pickPlayersOne()" style="height: 12em; width: 12em;"><h1 class="playerText" style="font-size: 5em;">1P</h1></button>
@@ -26,10 +26,10 @@
       
       <!-- ustawienia dzwieku -->
       <div class="soundSettings">
-        <div class="arrowButton" onclick="arrowButtonSound()"><img src="/ProjectJS/images/arrowIcon.png" style="width: 3em; height: 2.5em;"></div>
+        <div class="arrowButton" onclick="arrowButtonSound()"><img src="/images/arrowIcon.png" style="width: 3em; height: 2.5em;"></div>
         <div style="display: flex;align-items:center;margin-top: 2em;justify-content: center; flex-direction: row;gap: 10em;margin-left: 3em;margin-right: 3em;">
-          <button class="smallMenuButton" onclick="soundSettingsImageLoud(this)"  style="height: 12em; width: 12em;"><img  src="/ProjectJS/images/soundOn4.png" style="width: 6em; height: 6em;"></button>
-          <button class="smallMenuButton"  onclick="soundSettingsImageMusic(this)" style="height: 12em; width: 12em;"><img src="/ProjectJS/images/music.png" style="width: 6em; height: 6em;"></button>
+          <button class="smallMenuButton" onclick="soundSettingsImageLoud(this)"  style="height: 12em; width: 12em;"><img  src="/images/soundOn4.png" style="width: 6em; height: 6em;"></button>
+          <button class="smallMenuButton"  onclick="soundSettingsImageMusic(this)" style="height: 12em; width: 12em;"><img src="/images/music.png" style="width: 6em; height: 6em;"></button>
         </div>
         <div style="display: flex;align-items:center;margin-top: 4em;justify-content: center; flex-direction: row;gap: 10em;margin-left: 3em;margin-right: 3em; height: 10em;">
           <input type="range" min="0" max="100" id="Effects-img" onchange="sliderSoundEffects(this)" class="vertical-slider">
@@ -57,8 +57,8 @@
     <canvas id="game-canvas"></canvas>
     <div id="joystick-container" class="joystick-container"></div> -->
     
-    <script type="module" src="/ProjectJS/js/main.js"></script>
-    <script type="module" src="/ProjectJS/js/menu.js"></script>
+    <script type="module" src="/js/main.js"></script>
+    <script type="module" src="/js/menu.js"></script>
 
 <!-- info autorzy  -->
   </body>
