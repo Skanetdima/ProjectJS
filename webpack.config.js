@@ -16,7 +16,7 @@ module.exports = {
         use: ['style-loader', 'css-loader'],
       },
       {
-        test: /\.(png|jpg|jpeg|gif)$/i, // Обработка изображений
+        test: /\.(png|jpg|jpeg|gif|svg)$/i, // Обработка изображений и SVG
         type: 'asset/resource',
         generator: {
           filename: 'images/[name][ext]', // Копирует изображения в dist/images
