@@ -60,9 +60,19 @@ export class Game {
       this.ctx.scale(this.camera.zoom, this.camera.zoom);
       this.ctx.translate(-this.camera.x, -this.camera.y);
 
+      // Calculate the position to center the background
+      const rightOffset = 310; // Adjust this value to move the image more or less to the right
+      const centerX = (this.canvas.width / this.camera.zoom - this.backgroundImage.width) / 2 + rightOffset;
+      const centerY = (this.canvas.height / this.camera.zoom - this.backgroundImage.height) / 2;
+
       // Draw the background image
-      // Use the original image dimensions instead of canvas dimensions
-      this.ctx.drawImage(this.backgroundImage, 0, 0, this.backgroundImage.width, this.backgroundImage.height);
+      this.ctx.drawImage(
+        this.backgroundImage,
+        centerX,
+        centerY,
+        this.backgroundImage.width,
+        this.backgroundImage.height
+      );
 
       // Restore the context state
       this.ctx.restore();

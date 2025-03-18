@@ -4,8 +4,8 @@ export class Character {
     this.color = color;
     this.radius = 20;
     this.speed = 5;
-    this.x = ctx.canvas.width / 2;
-    this.y = ctx.canvas.height / 2;
+    this.x = ctx.canvas.width / 2 - 600;
+    this.y = ctx.canvas.height / 2 - 170;
   }
 
   move(direction) {
