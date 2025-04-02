@@ -1,0 +1,52 @@
+.all{
+    display: flex;
+    justify-content: center;
+}
+.whiteboard{
+    width: 60em;
+    height: 40em;
+    background-color: rgb(6, 100, 6);
+    border: 0.5em solid silver;
+    display: flex;
+    flex-direction: column;
+}
+.gora{
+    width: 100%;
+    height: 50%;
+    margin-top: 1%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.tytul{
+    width: 100%;
+    height: 10%;
+    text-align: center;
+}
+.pytanie{
+    width: 100%;
+    height: 90%;
+    margin-top: 5%;
+}
+.dol{
+    width: 100%;
+    height: 40%;
+    margin-top: 3%;
+}
+.odpowiedzi{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+}
+.odp{
+    width: 20%;
+    height: 90%;
+    background-color: rgb(6, 100, 6);
+    margin-top: 1.5%;
+    border: 0.1em solid silver;
+}
+.odp:hover{
+    border: 0.2em solid red;
+}
