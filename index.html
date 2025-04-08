@@ -11,37 +11,37 @@
 <div class="ekranGlowny">
     <!-- wybor ilosci graczy -->
     <div class="choosePlayers">
-      <div class="arrowButton" onclick="arrowButton()"><img src="/images/arrowIcon.png" style="width: 3em; height: 2.5em;"></div>
-
-          <div style="display: flex;align-items:center;margin-top: 3em;justify-content: center; flex-direction: row;gap: 10em;margin-left: 3em;margin-right: 3em;">
-              <button class="smallMenuButton" id="onePlayer" onclick="pickPlayersOne()" style="height: 12em; width: 12em;"><h1 class="playerText" style="font-size: 5em;">1P</h1></button>
-              <button class="smallMenuButton" id="twoPlayers" onclick="pickPlayersTwo()" style="height: 12em; width: 12em;"><h1 class="playerText" style="font-size: 5em;">2P</h1></button>
+      <div class="arrowButton" onclick="arrowButton()"></div>
+          <div style="display: flex;align-items:center;margin-top: 2em;justify-content: center; flex-direction: row;gap: 10em;margin-left: 3em;margin-right: 3em;">
+              <div class="smallMenuButton player" id="onePlayer" onclick="pickPlayersOne()" ><h1 class="playerText">1P</h1></div>
+              <div class="smallMenuButton player" id="twoPlayers" onclick="pickPlayersTwo()"><h1 class="playerText">2P</h1></div>
           </div>
 
-          <div style="display: flex; align-items:center;justify-content: center;margin-top: 5em;flex-direction: row;gap: 10em; margin-left: 3em;margin-right: 3em;">
-              <button class="smallMenuButton" id="threePlayers" onclick="pickPlayersThree()" style="height: 12em; width: 12em;"><h1 class="playerText" style="font-size: 5em;">3P</h1></button>
-              <button class="smallMenuButton" id="fourPlayers"  onclick="pickPlayersFour()"   style="height: 12em; width: 12em;"><h1 class="playerText" style="font-size: 5em;">4P</h1></button>
+          <div style="display: flex; align-items:center;justify-content: center;margin-top: 4em;flex-direction: row;gap: 10em; margin-left: 3em;margin-right: 3em;">
+              <div class="smallMenuButton player" id="threePlayers" onclick="pickPlayersThree()"><h1 class="playerText">3P</h1></div>
+              <div class="smallMenuButton player" id="fourPlayers"  onclick="pickPlayersFour()"><h1 class="playerText">4P</h1></div>
           </div>
       </div>
       
       <!-- ustawienia dzwieku -->
       <div class="soundSettings">
-        <div class="arrowButton" onclick="arrowButtonSound()"><img src="/images/arrowIcon.png" style="width: 3em; height: 2.5em;"></div>
-        <div style="display: flex;align-items:center;margin-top: 2em;justify-content: center; flex-direction: row;gap: 10em;margin-left: 3em;margin-right: 3em;">
-          <button class="smallMenuButton" onclick="soundSettingsImageLoud(this)"  style="height: 12em; width: 12em;"><img  src="/images/soundOn4.png" style="width: 6em; height: 6em;"></button>
-          <button class="smallMenuButton"  onclick="soundSettingsImageMusic(this)" style="height: 12em; width: 12em;"><img src="/images/music.png" style="width: 6em; height: 6em;"></button>
+        <div class="arrowButton" onclick="arrowButtonSound()"></div>
+        <div style="display: flex; align-items: center; margin-top: 2em; justify-content: center; flex-direction: row; gap: 10em; margin-left: 3em; margin-right: 3em;">
+            <div class="effectsLoud" onclick="soundSettingsImageLoud(this)"></div>
+            <div class="musicLoud" onclick="soundSettingsImageMusic(this)"></div>
         </div>
-        <div style="display: flex;align-items:center;margin-top: 4em;justify-content: center; flex-direction: row;gap: 10em;margin-left: 3em;margin-right: 3em; height: 10em;">
-          <input type="range" min="0" max="100" id="Effects-img" onchange="sliderSoundEffects(this)" class="vertical-slider">
-          <input type="range" min="0" max="100" id="Music-img" onchange="sliderSoundMusic(this)" class="vertical-slider">
+        <div style="display: flex; align-items: center; margin-top: 5em; justify-content: center; flex-direction: row; gap: 10em; margin-left: 3em; margin-right: 3em; height: 10em;">
+            <input type="range" min="0" max="100" id="Effects-img" onchange="sliderSoundEffects(this)" class="vertical-slider">
+            <input type="range" min="0" max="100" id="Music-img" onchange="sliderSoundMusic(this)" class="vertical-slider">
         </div>
-      </div>
+    </div>
+    
 
       <!-- menu glowne -->
   <div class="menu">
-      <button class="smallMenuButton" onclick="soundSettings()"><img src="./images/soundOn4.png" style="width: 4em; height: 4em;"></button>
-      <button class="startButton"><span class="playIcon"></span></button>
-      <button class="smallMenuButton"  onclick="choosePlayers()"><h1 class="playerText" id="amountOfPlayers">1P</h1></button>
+      <div class="settings" onclick="soundSettings()"></div>
+       <div class="startButton"></div>
+      <div class="smallMenuButton"  onclick="choosePlayers()"><h1 class="playerTextMenu">1P</h1></div>
   </div>
 </div>
 
@@ -60,6 +60,5 @@
     <script type="module" src="/js/main.js"></script>
     <script type="module" src="/js/menu.js"></script>
 
-<!-- info autorzy  -->
   </body>
 </html>

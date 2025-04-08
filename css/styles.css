@@ -17,11 +17,11 @@
   justify-content: center;
   align-items: center;
   background: rgba(0, 0, 0, 0.9);
-  z-index: 3; /* Увеличим z-index для меню */
+  z-index: 3; /* Zwiększ z-indeks dla menu */
 }
 
 .character-selection {
-  display: flex;           
+  display: flex;
   gap: 2rem;
 }
 
@@ -39,7 +39,7 @@
   border-color: white;
 }
 
-/* Цвета кружков */
+/* Kolory kółek */
 .red {
   background-color: #ff4444;
 }
@@ -59,12 +59,12 @@
   left: 0;
   z-index: 1;
   background-color: #000;
-  display: none; /* Скрываем канвас по умолчанию */
+  display: none; /* Domyślnie ukryj kanwas */
 }
 
 .joystick-container {
   position: fixed;
-  bottom: 20px; /* Уменьшаем отступ снизу */
+  bottom: 20px; /* Zmniejsz wcięcie u dołu */
   left: 50px;
   width: 120px;
   height: 120px;
@@ -74,128 +74,193 @@
   display: none; /* Скрываем джойстик по умолчанию */
 }
 
-
-
-
 .ekranGlowny {
-    background-color: rgb(255, 152, 152);
-    width: 100vw;
-    height: 100vh;
-    margin: 0;
-    padding: 0;
+  background-color: rgb(255, 152, 152);
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 .menu {
-    display: flex;
-    width: 100%;
-    justify-content: center;
-    align-items: center;
-    gap: 5em;
-    padding-top: 30%;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  gap: 5em;
+  padding-top: 30%;
 }
 
-.smallMenuButton {
-    height: 8em;
-    width: 8em;
-    border-radius: 50%;
-    background-color: rgb(14, 209, 14);
-    border: 0.4em solid rgb(212, 212, 212);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+.effectsLoud {
+  width: 9em;
+  height: 9em;
+  cursor: pointer;
+  background-image: url('/asset/png/Buttons/Square-Medium/SoundOn/Default.png');
+  background-size: cover;
+  background-position: center;
+  transition: background-image 0.3s ease-in-out;
 }
 
+.effectsLoud:hover {
+  background-image: url('/asset/png/Buttons/Square-Medium/SoundOn/Hover.png');
+}
+
+.musicLoud {
+  width: 9em;
+  height: 9em;
+  cursor: pointer;
+  background-image: url('/asset/png/Buttons/Square-Medium/Repeat/Default.png');
+  background-size: cover;
+  background-position: center;
+}
+
+.musicLoud:hover {
+  background-image: url('/asset/png/Buttons/Square-Medium/Repeat/Hover.png');
+}
 .startButton {
-    height: 12em;
-    width: 12em;
-    border-radius: 50%;
-    background-color: rgb(14, 209, 14);
-    border: 0.6em solid rgb(212, 212, 212);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-.playIcon {
-    width: 0;
-    height: 0;
-    border-top: 2em solid transparent;
-    border-bottom: 2em solid transparent;
-    border-left: 3em solid white;
-    margin-left: 0.5em;
-    transition: transform 0.2s ease;
+  width: 15em;
+  height: 8em;
+  cursor: pointer;
+  background-image: url('/asset/png/Buttons/Rect-Medium/PlayIcon/Default.png');
+  background-size: cover;
+  background-position: center;
+  transition: background-image 0.3s ease-in-out;
 }
 
 .startButton:hover {
-    background-color: rgb(73, 225, 73);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+  background-image: url('/asset/png/Buttons/Rect-Medium/PlayIcon/Hover.png');
 }
 
-.startButton:hover .playIcon {
-    transform: scale(1.2);
+.playIcon {
+  width: 0;
+  height: 0;
+  border-top: 2em solid transparent;
+  border-bottom: 2em solid transparent;
+  border-left: 3em solid white;
+  margin-left: 0.5em;
+  transition: transform 0.2s ease;
 }
 
-.smallMenuButton:hover {
-    background-color: rgb(73, 225, 73);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
-}
+
 
 .arrowButton {
-    width: 5em;
-    height: 3em;
-    background-color: rgb(14, 209, 14);
-    border: 0.2em solid rgb(212, 212, 212);
-    border-radius: 45%;
-    margin-left: 1em;
-    margin-top: 1em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+  width: 5em;
+  height: 5em;
+  align-self: flex-start; /* Размещает кнопку в левом верхнем углу */
+  margin: 2em;   
+  background-image: url('/asset/png/Buttons/Square-Medium/ArrowLeft/Default.png');
+  background-size: cover;
+  background-position: center;
+  transition: background-image 0.3s ease-in-out;
+  cursor: pointer;
 }
 
 .arrowButton:hover {
-    background-color: rgb(73, 225, 73);
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  background-image: url('/asset/png/Buttons/Square-Medium/ArrowLeft/Hover.png');
 }
 
 .choosePlayers {
-    display: none;
-    background-color: rgb(103, 8, 8);
-    width: 50em;
-    height: 35em;
-    z-index: 1;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.soundSettings {
   display: none;
-  background-color: rgb(103, 8, 8);
   width: 50em;
-  height: 35em;
+  height: 38em;
   z-index: 1;
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  background-color: #2b2e37;
+  border: 0.3em solid;
+  border-color: #e42554;
+  border-radius: 3%;
 }
 
-.playerText{
-    font-size: 3em; 
-    color: white;
-    font-family: Rubik; 
-    font-weight: 500;
+.soundSettings {
+  display: none;
+  width: 50em;
+  height: 38em;
+  z-index: 1;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #2b2e37;
+  border: 0.3em solid;
+  border-color: #e42554;
+  border-radius: 3%;
 }
+
+
+.playerTextMenu {
+  font-size: 2.5em;
+  color: #e42554;
+  font-family: Rubik;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+
+.playerText {
+  font-size: 5em;
+  color: #e42554;
+  font-family: Rubik;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 
 .vertical-slider {
-  width: 12em;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13em;
+  height: 1em;
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
+  background: #e42554;
+  border-radius: 0.4em;
+  cursor: pointer;
 }
+
+.vertical-slider::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  appearance: none;
+  background: #ddd;
+  border: 0.15em solid;
+  border-color: #e42554;
+  border-radius: 50%;
+  width: 1.8em;
+  height: 1.8em;
+}
+
+.settings {
+  cursor: pointer;
+  height: 5em;
+  width: 5em;
+  background-image: url('/asset/png/Buttons/Square-Medium/Repeat/Default.png');
+  background-size: cover;
+  background-position: center;
+}
+
+.smallMenuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: url('/asset/png/textDefault.png');
+  background-size: cover;
+  background-position: center;
+  width: 5em;
+  height: 5em;
+  
+}
+
+.smallMenuButton:hover{
+  background-image: url('/asset/png/textHover.png');
+}
+
+.player{
+  width: 11em;
+  height: 11em;
+  cursor: pointer;
+}
+
+
+
