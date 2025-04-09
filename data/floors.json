@@ -1,0 +1,31 @@
+{
+    "floors": [
+      {
+        "floor": 2,
+        "transitionZones": [
+          {
+            "x": 500,
+            "y": 300,
+            "width": 50,
+            "height": 50,
+            "targetFloor": 3,
+            "type": "stairs"
+          }
+        ]
+      },
+      {
+        "floor": 3,
+        "transitionZones": [
+          {
+            "x": 100,
+            "y": 100,
+            "width": 50,
+            "height": 50,
+            "targetFloor": 2,
+            "type": "stairs",
+            "isEntry": true
+          }
+        ]
+      }
+    ]
+  }
