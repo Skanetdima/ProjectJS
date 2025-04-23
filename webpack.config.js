@@ -6,7 +6,7 @@ module.exports = {
   entry: './js/main.js', // Главный JS файл (точка входа)
   output: {
     filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'docs'),
     clean: true, // Очищает папку dist перед сборкой
   },
   module: {
