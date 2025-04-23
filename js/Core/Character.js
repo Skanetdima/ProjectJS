@@ -1,65 +1,131 @@
-// src/Core/Character.js
+// src/core/Character.js
+
 export class Character {
+  /** Static object for direction constants */
+  static Direction = {
+    DOWN: 0,
+    RIGHT: 1,
+    UP: 2,
+    LEFT: 3,
+  };
+
+  /**
+   * Creates a new Character instance.
+   * @param {CanvasRenderingContext2D} ctx - The rendering context.
+   * @param {string} spriteUrl - URL of the character's sprite sheet.
+   * @param {object} options - Configuration options.
+   * @param {number} [options.frameSize=32] - Size of one frame in the sprite sheet (pixels).
+   * @param {number} [options.frameCount=4] - Number of frames per animation cycle (per direction).
+   * @param {number} [options.scale=2] - Scaling factor for rendering.
+   * @param {number} [options.speed=3] - Movement speed in pixels per update.
+   * @param {number} [options.animationSpeed=150] - Milliseconds per animation frame.
+   * @param {number} [options.collisionBoxWidthRatio=0.4] - Width of collision box relative to renderSize.
+   * @param {number} [options.collisionBoxHeightRatio=0.2] - Height of collision box relative to renderSize.
+   * @param {number} [options.collisionBoxFeetOffsetRatio=0.4] - Vertical offset of collision box center from character center (towards feet), relative to renderSize.
+   */
   constructor(ctx, spriteUrl, options = {}) {
     this.ctx = ctx;
     this.sprite = new Image();
-    this.sprite.src = spriteUrl;
 
-    this.frameSize = options.frameSize || 32; // Размер одного кадра в спрайте
-    this.scale = options.scale || 2; // Масштаб отрисовки персонажа
-    this.renderSize = this.frameSize * this.scale; // Финальный размер на экране
-    this.speed = options.speed || 3; // Скорость движения (пикселей за кадр обновления)
-    this.animationSpeed = options.animationSpeed || 150; // мс между кадрами анимации
+    // Configuration with defaults
+    this.frameSize = options.frameSize || 32;
+    this.frameCount = options.frameCount || 4; // Number of frames per direction
+    this.scale = options.scale || 2;
+    this.renderSize = this.frameSize * this.scale;
+    this.speed = options.speed || 3;
+    this.animationSpeed = options.animationSpeed || 150; // ms per frame
 
-    // Мировые координаты персонажа (инициализируются в Game)
-    this.x = 0;
-    this.y = 0;
+    // Collision Box Configuration
+    this.collisionBoxWidthRatio = options.collisionBoxWidthRatio || 0.4;
+    this.collisionBoxHeightRatio = options.collisionBoxHeightRatio || 0.2;
+    this.collisionBoxFeetOffsetRatio = options.collisionBoxFeetOffsetRatio || 0.4;
 
-    this.currentDirection = 0; // 0: вниз, 1: вправо, 2: вверх, 3: влево
-    this.currentFrame = 0; // Текущий кадр анимации (0-3)
-    this.isMoving = false; // Двигается ли персонаж сейчас?
-    this.lastFrameTime = Date.now(); // Время последнего обновления кадра анимации
+    // State
+    this.x = 0; // World X coordinate
+    this.y = 0; // World Y coordinate
+    this.currentDirection = Character.Direction.DOWN; // Start facing down
+    this.currentFrame = 0; // Current animation frame index
+    this.isMoving = false; // Is the character currently moving?
+    this.lastFrameTime = 0; // Timestamp of the last frame update
+
+    // Load sprite and add handlers
+    this.sprite.onload = () => {
+      console.log(`[Character] Sprite loaded successfully: ${spriteUrl}`);
+    };
+    this.sprite.onerror = () => {
+      console.error(`[Character] Failed to load sprite: ${spriteUrl}`);
+    };
+    this.sprite.src = spriteUrl; // Start loading
   }
 
-  draw() {
-    // Не рисовать, если спрайт еще не загружен
-    if (!this.sprite.complete || this.sprite.naturalHeight === 0) {
-      console.warn('Sprite not ready for drawing or failed to load:', this.sprite.src);
+  /**
+   * Updates the character's animation frame based on movement state and time.
+   * Should be called in the game's update loop.
+   * @param {number} timestamp - The current high-resolution timestamp (e.g., from requestAnimationFrame).
+   */
+  updateAnimation(timestamp) {
+    if (!this.isMoving) {
+      this.currentFrame = 0;
+      this.lastFrameTime = timestamp;
       return;
     }
-
-    const now = Date.now();
-
-    // Обновляем кадр анимации, только если персонаж двигается
-    if (this.isMoving && now - this.lastFrameTime > this.animationSpeed) {
-      this.currentFrame = (this.currentFrame + 1) % 4; // Цикл по 4 кадрам (0, 1, 2, 3)
-      this.lastFrameTime = now;
-    } else if (!this.isMoving) {
-      // Если не двигается, остановить анимацию на первом кадре (0)
-      this.currentFrame = 0;
+    if (!this.lastFrameTime) {
+      this.lastFrameTime = timestamp;
     }
+    const elapsed = timestamp - this.lastFrameTime;
+    if (elapsed > this.animationSpeed) {
+      this.currentFrame = (this.currentFrame + 1) % this.frameCount;
+      this.lastFrameTime = timestamp;
+    }
+  }
 
-    // Определяем координаты нужного кадра в спрайте
+  /**
+   * Calculates the collision bounding box based on a potential position.
+   * @param {number} posX - The potential X coordinate for the collision check.
+   * @param {number} posY - The potential Y coordinate for the collision check.
+   * @returns {{top: number, bottom: number, left: number, right: number, width: number, height: number}} The collision box properties.
+   */
+  getCollisionBox(posX, posY) {
+    const width = this.renderSize * this.collisionBoxWidthRatio;
+    const height = this.renderSize * this.collisionBoxHeightRatio;
+    const halfWidth = width / 2;
+    const feetOffsetY = this.renderSize * this.collisionBoxFeetOffsetRatio;
+    const top = posY + feetOffsetY - height / 2;
+    const bottom = posY + feetOffsetY + height / 2;
+    const left = posX - halfWidth;
+    const right = posX + halfWidth;
+    return { top, bottom, left, right, width, height };
+  }
+
+  /**
+   * Draws the character onto the canvas at its current position,
+   * considering the camera offset.
+   * @param {number} offsetX - The camera's X offset.
+   * @param {number} offsetY - The camera's Y offset.
+   */
+  draw(offsetX, offsetY) {
+    if (!this.sprite.complete || this.sprite.naturalHeight === 0) {
+      return; // Don't draw if sprite isn't ready
+    }
     const frameX = this.currentFrame * this.frameSize;
-    // В спрайте строки соответствуют направлениям: 0-вниз, 1-вправо, 2-вверх, 3-влево
     const frameY = this.currentDirection * this.frameSize;
+    const screenX = Math.floor(this.x - this.renderSize / 2 + offsetX);
+    const screenY = Math.floor(this.y - this.renderSize / 2 + offsetY);
 
-    // Персонаж всегда рисуется в центре экрана,
-    // так как камера (смещение карты) следует за ним
-    const screenX = this.ctx.canvas.width / 2 - this.renderSize / 2;
-    const screenY = this.ctx.canvas.height / 2 - this.renderSize / 2;
-
-    // Рисуем текущий кадр персонажа на канвас
-    this.ctx.drawImage(
-      this.sprite, // Исходное изображение (спрайт)
-      frameX, // X координата кадра в спрайте
-      frameY, // Y координата кадра в спрайте
-      this.frameSize, // Ширина кадра в спрайте
-      this.frameSize, // Высота кадра в спрайте
-      screenX, // X координата на канвасе (центр)
-      screenY, // Y координата на канвасе (центр)
-      this.renderSize, // Ширина отрисовки на канвасе
-      this.renderSize // Высота отрисовки на канвасе
-    );
+    try {
+      this.ctx.drawImage(
+        this.sprite,
+        frameX,
+        frameY,
+        this.frameSize,
+        this.frameSize, // Source rect
+        screenX,
+        screenY,
+        this.renderSize,
+        this.renderSize // Dest rect
+      );
+    } catch (e) {
+      console.error('[Character] Error drawing sprite:', e);
+    }
   }
 }

@@ -1,95 +1,113 @@
-// src/Core/Level.js
-import { ProceduralMap } from './ProceduralMap.js';
+// src/core/Level.js
+import { ProceduralMap } from '../map/ProceduralMap.js';
+// Removed TRANSITION_ZONE_RADIUS_MULTIPLIER import
 
+/**
+ * Класс Level управляет текущим этажом и загрузкой карт.
+ * Логика зон перехода (transition zones) удалена, т.к. лифт работает иначе.
+ */
 export class Level {
+  /**
+   * Создает экземпляр Level.
+   * @param {number} [minFloor=1] - Номер самого нижнего этажа.
+   * @param {number} [maxFloor=3] - Номер самого верхнего этажа.
+   */
   constructor(minFloor = 1, maxFloor = 3) {
-    // Задаем диапазон этажей
-    this.minFloor = minFloor;
-    this.maxFloor = maxFloor;
-    this.currentFloor = minFloor; // Начинаем с первого этажа
-    this.currentMap = null; // Текущая загруженная карта (ProceduralMap)
-    this.transitionZones = []; // Массив активных зон перехода на текущем этаже
+    if (minFloor >= maxFloor) {
+      console.warn(
+        `Level constructor: minFloor (${minFloor}) must be less than maxFloor (${maxFloor}). Using defaults 1 and 3.`
+      );
+      this.minFloor = 1;
+      this.maxFloor = 3;
+    } else {
+      this.minFloor = minFloor;
+      this.maxFloor = maxFloor;
+    }
+
+    this.currentFloor = this.minFloor;
+    this.currentMap = null; // Instance of ProceduralMap
+    // this.transitionZones = []; // REMOVED - No longer needed for lifts
+    this.tileSize = 32; // Default, will be updated from map
   }
 
-  // Асинхронно загружает (генерирует) карту для указанного этажа
+  /**
+   * Асинхронно загружает (генерирует) карту для указанного этажа.
+   * Assumes ProceduralMap constructor handles generation, lift placement,
+   * and throws on critical failure (e.g., unreachable lift).
+   * @param {number} floorNumber - Номер этажа для загрузки.
+   * @param {number} canvasWidth - Ширина канваса.
+   * @param {number} canvasHeight - Высота канваса.
+   * @returns {Promise<void>} Промис, который разрешается после загрузки этажа.
+   * @throws {Error} If ProceduralMap generation or validation fails.
+   */
   async loadFloor(floorNumber, canvasWidth, canvasHeight) {
-    // Проверяем, входит ли запрашиваемый этаж в допустимый диапазон
     if (floorNumber < this.minFloor || floorNumber > this.maxFloor) {
+      const errorMsg = `Attempted to load invalid floor: ${floorNumber}. Allowed range: [${this.minFloor}-${this.maxFloor}]`;
+      console.error(`[Level] ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+
+    console.log(`[Level] Loading floor ${floorNumber}...`);
+    this.currentFloor = floorNumber;
+
+    try {
+      // ProceduralMap constructor now handles generation AND validation (like lift reachability).
+      // It will throw an error if generation fails critically.
+      this.currentMap = new ProceduralMap(
+        canvasWidth,
+        canvasHeight,
+        this.currentFloor,
+        this.minFloor,
+        this.maxFloor
+      );
+
+      // Basic validation after creation (ensure map object looks reasonable)
+      if (
+        !this.currentMap.tileSize ||
+        !this.currentMap.map ||
+        !this.currentMap.books || // books should exist (even if empty)
+        !this.currentMap.getLiftPosition() // Lift position MUST exist after successful generation
+      ) {
+        throw new Error(
+          '[Level] ProceduralMap instance is missing essential properties after creation (tileSize, map, books, or liftPosition).'
+        );
+      }
+
+      this.tileSize = this.currentMap.tileSize;
+      const liftPos = this.currentMap.getLiftPosition();
+      console.log(
+        `  [Level] Map generated for floor ${this.currentFloor}. TileSize: ${this.tileSize}. Lift at tile(${liftPos.tileX}, ${liftPos.tileY}).`
+      );
+
+      // REMOVED: createTransitionZones() call is no longer needed.
+
+      console.log(
+        `[Level] Floor ${floorNumber} loaded successfully. Map size: ${this.currentMap.cols}x${this.currentMap.rows}. ${this.currentMap.books.length} books placed.`
+      );
+    } catch (error) {
       console.error(
-        `Attempted to load invalid floor: ${floorNumber}. Allowed range: [${this.minFloor}-${this.maxFloor}]`
+        `[Level] CRITICAL FAILURE loading floor ${floorNumber}: Failed to create or validate ProceduralMap:`,
+        error
       );
-      throw new Error(`Invalid floor number: ${floorNumber}`);
-    }
-
-    console.log(`Loading floor ${floorNumber}...`);
-    this.currentFloor = floorNumber; // Устанавливаем текущий этаж
-
-    // Создаем новый экземпляр ProceduralMap для этого этажа
-    // Генерация происходит внутри конструктора ProceduralMap
-    this.currentMap = new ProceduralMap(canvasWidth, canvasHeight);
-
-    // Очищаем старые зоны перехода
-    this.transitionZones = [];
-
-    // Получаем информацию о лестницах со сгенерированной карты
-    const stairs = this.currentMap.stairs;
-    const tileSize = this.currentMap.tileSize;
-
-    // Создаем зону перехода ВНИЗ, если лестница вниз существует И это не самый нижний этаж
-    if (stairs.down && floorNumber > this.minFloor) {
-      this.transitionZones.push({
-        x: stairs.down.x - tileSize / 2, // Левый верхний угол тайла
-        y: stairs.down.y - tileSize / 2,
-        width: tileSize,
-        height: tileSize,
-        type: 'stairs_down', // Тип зоны (соответствует типу лестницы)
-        targetFloor: floorNumber - 1, // Куда ведет эта зона
-      });
-      console.log(
-        `  Added transition zone: DOWN to floor ${floorNumber - 1} at world coords (${
-          stairs.down.x
-        }, ${stairs.down.y})`
+      this.currentMap = null; // Ensure state is clean on failure
+      // Rethrow the error for Game.js to handle (likely show error message and stop)
+      throw new Error(
+        `Map generation/validation failed for floor ${floorNumber}. ${error.message || error}`
       );
     }
 
-    // Создаем зону перехода ВВЕРХ, если лестница вверх существует И это не самый верхний этаж
-    if (stairs.up && floorNumber < this.maxFloor) {
-      this.transitionZones.push({
-        x: stairs.up.x - tileSize / 2, // Левый верхний угол тайла
-        y: stairs.up.y - tileSize / 2,
-        width: tileSize,
-        height: tileSize,
-        type: 'stairs_up', // Тип зоны
-        targetFloor: floorNumber + 1, // Куда ведет эта зона
-      });
-      console.log(
-        `  Added transition zone: UP to floor ${floorNumber + 1} at world coords (${stairs.up.x}, ${
-          stairs.up.y
-        })`
-      );
-    }
-
-    console.log(
-      `Floor ${floorNumber} loaded. ${this.transitionZones.length} transition zones active.`
-    );
-    // Дожидаться загрузки ресурсов карты не нужно, т.к. генерация синхронна
-    // и текстуры (если будут) грузятся отдельно.
-    return Promise.resolve(); // Возвращаем промис для совместимости с async/await
+    // Return a resolved promise (generation itself is synchronous within the constructor)
+    return Promise.resolve();
   }
 
-  // Находит зону перехода, в которой находятся указанные мировые координаты
-  getCurrentTransitionZone(x, y) {
-    // Проверяем попадание точки (x, y) в прямоугольник каждой зоны
-    return this.transitionZones.find(
-      (zone) =>
-        x >= zone.x &&
-        x < zone.x + zone.width && // Используем < для width/height
-        y >= zone.y &&
-        y < zone.y + zone.height
-    );
-  }
+  // REMOVED: createTransitionZones() method is obsolete.
 
-  // Метод для получения всех книг с текущей карты
+  // REMOVED: getCurrentTransitionZone() method is obsolete. Lift interaction checked differently.
+
+  /**
+   * Возвращает массив объектов книг на текущей карте.
+   * @returns {Array<object>} Массив объектов книг.
+   */
   getCurrentBooks() {
     return this.currentMap ? this.currentMap.books : [];
   }
