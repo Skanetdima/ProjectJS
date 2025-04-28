@@ -109,14 +109,17 @@
   width: 9em;
   height: 9em;
   cursor: pointer;
-  background-image: url('/asset/png/Buttons/Square-Medium/Repeat/Default.png');
+  background-image: url('/asset/png/Buttons/musicDefault.png');
   background-size: cover;
   background-position: center;
+  transition: background-image 0.3s ease-in-out;
 }
 
 .musicLoud:hover {
-  background-image: url('/asset/png/Buttons/Square-Medium/Repeat/Hover.png');
+  background-image: url('/asset/png/Buttons/musicHover.png');
 }
+
+
 .startButton {
   width: 15em;
   height: 8em;
@@ -235,9 +238,13 @@
   cursor: pointer;
   height: 5em;
   width: 5em;
-  background-image: url('/asset/png/Buttons/Square-Medium/Repeat/Default.png');
+  background-image: url('/asset/png/Buttons/settings.png');
   background-size: cover;
   background-position: center;
+}
+
+.settings:hover{
+  background-image: url('/asset/png/Buttons/settingsHover.png');
 }
 
 .smallMenuButton {
@@ -257,8 +264,8 @@
 }
 
 .player{
-  width: 11em;
-  height: 11em;
+  width: 15em;
+  height: 15em;
   cursor: pointer;
 }
 
