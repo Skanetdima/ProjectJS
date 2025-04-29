@@ -19,7 +19,7 @@ export const GameState = {
 };
 
 // Parametry rozgrywki
-export const TARGET_BOOKS_TO_WIN = 5; // Liczba książek do zebrania, aby wygrać (globalnie)
+export const TARGET_BOOKS_TO_WIN = 15; // Liczba książek do zebrania, aby wygrać (globalnie)
 export const LIFT_COOLDOWN_MS = 2000; // Czas odnowienia windy w milisekundach (2 sekundy)
 export const LIFT_INTERACTION_RADIUS_MULTIPLIER = 0.7; // Mnożnik promienia interakcji z windą (względem tileSize)
 

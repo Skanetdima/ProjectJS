@@ -1,6 +1,6 @@
 // src/core/Game.js
 import { InputManager } from './InputManager.js';
-// Используем правильный регистр в имени папки/файла: UI/UIManager.js
+// Używamy poprawnej wielkości liter w nazwie folderu/pliku: UI/UIManager.js
 import { UIManager } from '../UI/UIManager.js';
 import { Character } from './Character.js';
 import { Level } from './Level.js';
@@ -8,7 +8,7 @@ import { GameState, questions, TARGET_BOOKS_TO_WIN, LIFT_COOLDOWN_MS } from '../
 import { GameRenderer } from './GameRenderer.js';
 import { GameplayManager } from './GameplayManager.js';
 
-// Asset Imports (пути должны быть правильными относительно HTML файла)
+// Importy zasobów (assets) (ścieżki muszą być poprawne względem pliku HTML)
 import redSprite from '../../images/character_red.png';
 import blueSprite from '../../images/character_blue.png';
 import yellowSprite from '../../images/character_yellow.png';
@@ -17,103 +17,106 @@ import bookSprite from '../../images/book.png';
 
 export class Game {
   constructor(characterColor) {
-    console.log(`[Game] Initializing with character: ${characterColor}`);
+    console.log(`[Game] Inicjalizacja z postacią: ${characterColor}`);
     this.characterColor = characterColor;
     this._gameState = GameState.LOADING;
     this.isRunning = false;
 
-    // Глобальные игровые переменные
+    // Globalne zmienne gry
     this.totalBooksCollectedGlobally = 0;
     this.targetBooksToWin = TARGET_BOOKS_TO_WIN;
     this.availableQuestions = [];
 
-    // Состояние взаимодействия
+    // Stan interakcji
     this.currentBookTarget = null;
     this.currentQuestionData = null;
     this.liftCooldownActive = false;
     this.liftCooldownTimer = null;
 
-    // Основные компоненты игры
+    // Główne komponenty gry
     this.canvas = null;
     this.ctx = null;
     this.character = null;
     this.level = null;
     this.inputManager = null;
     this.renderer = null;
-    this.gameplayManager = null; // Инициализируется позже
+    this.gameplayManager = null; // Inicjalizowany później
 
-    // Загруженные ассеты
+    // Załadowane zasoby (assets)
     this.sprites = { red: redSprite, blue: blueSprite, yellow: yellowSprite, green: greenSprite };
     this.bookImage = null;
 
-    // Привязка методов к контексту
+    // Powiązanie metod z kontekstem
     this.gameLoop = this.gameLoop.bind(this);
     this._handleFatalError = this._handleFatalError.bind(this);
 
-    // --- Последовательность инициализации ---
+    // --- Sekwencja inicjalizacji ---
     try {
-      this._initializeCoreComponents(); // Синхронная инициализация базовых менеджеров
-      this.renderer = new GameRenderer(this); // Инициализация рендерера
-      const { canvas, ctx } = this.renderer.initializeCanvas(); // Получение canvas и context
+      this._initializeCoreComponents(); // Synchroniczna inicjalizacja podstawowych menedżerów
+      this.renderer = new GameRenderer(this); // Inicjalizacja renderera
+      const { canvas, ctx } = this.renderer.initializeCanvas(); // Pobranie canvas i context
       this.canvas = canvas;
       this.ctx = ctx;
-      this.gameplayManager = new GameplayManager(this); // Инициализация геймплей-менеджера
-      this._addEventListeners(); // Добавление глобальных слушателей (resize)
-      this._loadAssetsAndStart(); // Асинхронная загрузка ассетов и старт игры
+      this.gameplayManager = new GameplayManager(this); // Inicjalizacja menedżera rozgrywki (GameplayManager)
+      this._addEventListeners(); // Dodanie globalnych nasłuchiwaczy (resize)
+      this._loadAssetsAndStart(); // Asynchroniczne ładowanie zasobów i start gry
     } catch (error) {
-      console.error('[Game] Core Initialization failed:', error);
-      // Показываем алерт, так как UI может быть еще не готов
-      alert(`Критическая ошибка инициализации: ${error.message}`);
-      // Устанавливаем состояние ошибки без алерта (он уже был)
-      this._handleFatalError(`Init Error: ${error.message}`, false);
+      console.error('[Game] Inicjalizacja rdzenia nie powiodła się:', error);
+      // Pokazujemy alert, ponieważ UI może jeszcze nie być gotowe
+      alert(`Krytyczny błąd inicjalizacji: ${error.message}`);
+      // Ustawiamy stan błędu bez alertu (już został wyświetlony)
+      this._handleFatalError(`Błąd inicjalizacji: ${error.message}`, false);
     }
   }
 
-  // --- Геттер/Сеттер для состояния игры ---
+  // --- Getter/Setter dla stanu gry ---
   get gameState() {
     return this._gameState;
   }
   setGameState(newState) {
     if (this._gameState !== newState) {
-      console.log(`[Game State] ${this._gameState} -> ${newState}`);
+      console.log(`[Stan Gry] ${this._gameState} -> ${newState}`);
       this._gameState = newState;
     }
   }
 
-  // Инициализация базовых менеджеров
+  // Inicjalizacja podstawowych menedżerów
   _initializeCoreComponents() {
     this.inputManager = new InputManager();
-    this.level = new Level(1, 3); // Этажи с 1 по 3
+    this.level = new Level(1, 3); // Piętra od 1 do 3
   }
 
-  // Добавление слушателей событий окна
+  // Dodawanie nasłuchiwaczy zdarzeń okna
   _addEventListeners() {
-    // Ресайз канваса обрабатывается рендерером
+    // Zmiana rozmiaru canvas jest obsługiwana przez renderer
     window.addEventListener('resize', () => this.renderer?.resizeCanvas());
-    // Слушатели клавиатуры добавляются в startGame
+    // Nasłuchiwacze klawiatury są dodawane w startGame
   }
 
-  // Асинхронная загрузка ассетов и запуск игры
+  // Asynchroniczne ładowanie zasobów i uruchomienie gry
   async _loadAssetsAndStart() {
     try {
-      this.setGameState(GameState.LOADING); // Устанавливаем состояние загрузки
-      await this._loadAssets(); // Ждем загрузки всех ассетов
-      this._initializeUI(); // Инициализируем UI после загрузки (если нужно)
-      await this.startGame(); // Запускаем основную логику игры
+      this.setGameState(GameState.LOADING); // Ustawiamy stan ładowania
+      await this._loadAssets(); // Oczekujemy na załadowanie wszystkich zasobów
+      this._initializeUI(); // Inicjalizujemy UI po załadowaniu (jeśli potrzebne)
+      await this.startGame(); // Uruchamiamy główną logikę gry
     } catch (error) {
-      console.error('[Game] Asset loading / UI init / Start Game failed:', error);
-      this._handleFatalError(`Ошибка загрузки ресурсов или старта игры: ${error.message}`);
+      console.error(
+        '[Game] Ładowanie zasobów / inicjalizacja UI / start gry nie powiodły się:',
+        error
+      );
+      this._handleFatalError(`Błąd ładowania zasobów lub startu gry: ${error.message}`);
     }
   }
 
-  // Загрузка изображений (спрайты, книга)
+  // Ładowanie obrazów (sprite'y, książka)
   async _loadAssets() {
-    console.log('[Game] Loading assets...');
+    console.log('[Game] Ładowanie zasobów...');
     const promises = [];
-    const spritePath = this.sprites[this.characterColor] || this.sprites.red; // Выбор спрайта
+    const spritePath = this.sprites[this.characterColor] || this.sprites.red; // Wybór sprite'a
 
-    // Создание персонажа (требует ctx)
-    if (!this.ctx) throw new Error('Canvas context not available for Character creation.');
+    // Tworzenie postaci (wymaga ctx)
+    if (!this.ctx) throw new Error('Kontekst Canvas niedostępny do utworzenia Postaci.');
     this.character = new Character(this.ctx, spritePath, {
       speed: 3,
       frameSize: 32,
@@ -121,211 +124,213 @@ export class Game {
       animationSpeed: 150,
       frameCount: 4,
     });
-    // Промис для загрузки спрайта персонажа
+    // Promise do załadowania sprite'a postaci
     promises.push(
       new Promise((resolve, reject) => {
-        // Успешная загрузка
+        // Pomyślne załadowanie
         this.character.sprite.onload = () => {
-          console.log(`  [Assets] Character sprite loaded: ${spritePath}`);
+          console.log(`  [Zasoby] Sprite postaci załadowany: ${spritePath}`);
           resolve();
         };
-        // Ошибка загрузки
+        // Błąd ładowania
         this.character.sprite.onerror = (err) =>
-          reject(new Error(`Failed to load character sprite: ${spritePath}. ${err}`));
+          reject(new Error(`Nie udało się załadować sprite'a postaci: ${spritePath}. ${err}`));
       })
     );
 
-    // Загрузка изображения книги
+    // Ładowanie obrazu książki
     if (bookSprite) {
       this.bookImage = new Image();
       this.bookImage.src = bookSprite;
-      // Промис для загрузки книги
+      // Promise do załadowania książki
       promises.push(
         new Promise((resolve, reject) => {
-          // Успешная загрузка
+          // Pomyślne załadowanie
           this.bookImage.onload = () => {
-            console.log(`  [Assets] Book image loaded: ${bookSprite}`);
+            console.log(`  [Zasoby] Obraz książki załadowany: ${bookSprite}`);
             resolve();
           };
-          // Ошибка загрузки (не критично, есть fallback рендеринг)
+          // Błąd ładowania (niekrytyczny, istnieje renderowanie zapasowe - fallback)
           this.bookImage.onerror = () => {
             console.warn(
-              ` [Assets] Failed to load book image: ${bookSprite}. Using fallback rendering.`
+              ` [Zasoby] Nie udało się załadować obrazu książki: ${bookSprite}. Używanie renderowania zapasowego (fallback).`
             );
-            this.bookImage = null; // Сбрасываем, чтобы использовать fallback
-            resolve(); // Все равно разрешаем промис
+            this.bookImage = null; // Resetujemy, aby użyć fallback
+            resolve(); // Mimo wszystko rozwiązujemy (resolve) promise
           };
         })
       );
     } else {
-      console.warn('[Assets] Book sprite path is missing. Using fallback rendering.');
+      console.warn(
+        "[Zasoby] Brak ścieżki do sprite'a książki. Używanie renderowania zapasowego (fallback)."
+      );
       this.bookImage = null;
     }
 
-    // Ждем завершения всех промисов загрузки
+    // Oczekujemy na zakończenie wszystkich promisów ładowania
     await Promise.all(promises);
-    console.log('[Game] Assets loaded successfully.');
+    console.log('[Game] Zasoby załadowane pomyślnie.');
   }
 
-  // Инициализация элементов UI через UIManager
+  // Inicjalizacja elementów UI przez UIManager
   _initializeUI() {
-    console.log('[Game] Initializing UI Manager...');
-    UIManager.createControls(this.inputManager); // Создание кнопок управления
-    UIManager.createQuestionUI(); // Создание UI для вопросов
-    UIManager.createFloorSelectionUI(); // Создание UI для выбора этажа
-    UIManager.ensureFlashMessageContainer(); // Убеждаемся, что контейнер сообщений есть
-    // ! Ключевой момент: передаем экземпляр GameplayManager в UIManager !
+    console.log('[Game] Inicjalizacja Menedżera UI...');
+    UIManager.createControls(this.inputManager); // Tworzenie przycisków sterowania
+    UIManager.createQuestionUI(); // Tworzenie UI dla pytań
+    UIManager.createFloorSelectionUI(); // Tworzenie UI do wyboru piętra
+    UIManager.ensureFlashMessageContainer(); // Upewniamy się, że kontener wiadomości istnieje
+    // ! Kluczowy moment: przekazujemy instancję GameplayManager do UIManager !
     UIManager.setGameplayManager(this.gameplayManager);
-    console.log('[Game] UI Manager setup complete.');
+    console.log('[Game] Konfiguracja Menedżera UI zakończona.');
   }
 
-  // Основная функция старта или рестарта игры
+  // Główna funkcja startu lub restartu gry
   async startGame() {
-    console.log('[Game] Starting game...');
-    // Проверка наличия всех необходимых компонентов
+    console.log('[Game] Rozpoczynanie gry...');
+    // Sprawdzenie obecności wszystkich niezbędnych komponentów
     if (!this.level || !this.character || !this.canvas || !this.renderer || !this.gameplayManager) {
-      throw new Error('Cannot start game - essential components missing.');
+      throw new Error('Nie można rozpocząć gry - brak niezbędnych komponentów.');
     }
 
-    this.setGameState(GameState.LOADING); // Состояние загрузки уровня
-    // Скрываем все UI перед стартом
+    this.setGameState(GameState.LOADING); // Stan ładowania poziomu
+    // Ukrywamy cały interfejs użytkownika przed startem
     UIManager.hideGameUI();
     UIManager.hideQuestion();
     UIManager.hideFloorSelectionUI();
 
     try {
-      // 1. Загружаем начальный этаж (асинхронно)
+      // 1. Ładujemy początkowe piętro (asynchronicznie)
       await this.level.loadFloor(this.level.minFloor, this.canvas.width, this.canvas.height);
       const currentMap = this.level.currentMap;
       if (!currentMap) {
-        throw new Error('Failed to load initial map. Map object is null.');
+        throw new Error('Nie udało się załadować początkowej mapy. Obiekt mapy jest null.');
       }
 
-      // 2. Находим стартовую позицию на карте
+      // 2. Znajdujemy pozycję startową na mapie
       const startPos = currentMap.findRandomInitialSpawnPosition();
       if (!startPos) {
-        throw new Error('Failed to find a valid starting position on the map!');
+        throw new Error('Nie udało się znaleźć prawidłowej pozycji startowej na mapie!');
       }
 
-      // 3. Устанавливаем начальные координаты и состояние персонажа
+      // 3. Ustawiamy początkowe współrzędne i stan postaci
       this.character.x = startPos.x;
       this.character.y = startPos.y;
       this.character.currentDirection = Character.Direction.DOWN;
       this.character.isMoving = false;
 
-      // 4. ! ВАЖНО: Проверяем, не заспавнился ли персонаж в стене СРАЗУ !
-      // Передаем false (или не передаем), т.к. начальный спавн не должен быть на лифте
+      // 4. ! WAŻNE: Sprawdzamy, czy postać nie zespawnowała się od razu w ścianie !
+      // Przekazujemy false (lub nie przekazujemy), ponieważ początkowy spawn nie powinien być na windzie
       this.gameplayManager?.ensureCharacterIsOnWalkableTile(false);
 
-      // 5. Сброс игровых переменных
+      // 5. Resetowanie zmiennych gry
       this.totalBooksCollectedGlobally = 0;
-      this.availableQuestions = [...questions]; // Новый набор вопросов
+      this.availableQuestions = [...questions]; // Nowy zestaw pytań
       this.liftCooldownActive = false;
-      clearTimeout(this.liftCooldownTimer); // Сброс таймера кулдауна
+      clearTimeout(this.liftCooldownTimer); // Resetowanie timera cooldownu
       this.liftCooldownTimer = null;
       this.currentBookTarget = null;
       this.currentQuestionData = null;
 
-      // 6. Центрируем камеру ПОСЛЕ установки позиции и возможного выталкивания
+      // 6. Centrujemy kamerę PO ustawieniu pozycji i ewentualnym wypchnięciu
       this.renderer.centerCameraOnCharacter();
 
-      // 7. Обновляем и показываем игровой UI
+      // 7. Aktualizujemy i pokazujemy interfejs gry
       UIManager.updateScore(this.totalBooksCollectedGlobally, this.targetBooksToWin);
-      UIManager.showGameUI(); // Показываем канвас, счет, контролы
+      UIManager.showGameUI(); // Pokazujemy canvas, wynik, kontrolki
 
-      // 8. Добавляем слушатели клавиатуры
-      // Привязываем 'this' чтобы внутри обработчиков был доступ к экземпляру Game
+      // 8. Dodajemy nasłuchiwacze klawiatury
+      // Powiązujemy 'this', aby wewnątrz handlerów był dostęp do instancji Game
       this._boundKeyDownHandler = this.handleKeyDown.bind(this);
       this._boundKeyUpHandler = this.handleKeyUp.bind(this);
       window.addEventListener('keydown', this._boundKeyDownHandler);
       window.addEventListener('keyup', this._boundKeyUpHandler);
 
-      // 9. Переводим игру в активное состояние и запускаем игровой цикл
+      // 9. Przełączamy grę w stan aktywny i uruchamiamy pętlę gry
       this.setGameState(GameState.PLAYING);
       if (!this.isRunning) {
         this.isRunning = true;
-        requestAnimationFrame(this.gameLoop); // Запуск цикла
-        console.log('[Game] Game started successfully. Loop running.');
+        requestAnimationFrame(this.gameLoop); // Uruchomienie pętli
+        console.log('[Game] Gra rozpoczęta pomyślnie. Pętla działa.');
       }
     } catch (error) {
-      // Обработка ошибок во время старта (загрузка карты, поиск спавна)
-      console.error('[Game] Failed during startGame process:', error);
-      this._handleFatalError(`Ошибка старта уровня: ${error.message}`);
-      this.isRunning = false; // Убедимся, что цикл не запустится
+      // Obsługa błędów podczas startu (ładowanie mapy, szukanie spawnu)
+      console.error('[Game] Błąd podczas procesu startGame:', error);
+      this._handleFatalError(`Błąd startu poziomu: ${error.message}`);
+      this.isRunning = false; // Upewniamy się, że pętla się nie uruchomi
     }
   }
 
-  // Завершение игры (победа или ошибка)
+  // Zakończenie gry (wygrana lub błąd)
   _setGameOver(win = true) {
-    if (this.gameState === GameState.GAME_OVER) return; // Не завершать игру дважды
+    if (this.gameState === GameState.GAME_OVER) return; // Nie kończymy gry dwukrotnie
 
     this.setGameState(GameState.GAME_OVER);
-    this.isRunning = false; // Останавливаем игровой цикл
-    if (this.character) this.character.isMoving = false; // Останавливаем анимацию персонажа
-    clearTimeout(this.liftCooldownTimer); // Останавливаем таймер лифта
+    this.isRunning = false; // Zatrzymujemy pętlę gry
+    if (this.character) this.character.isMoving = false; // Zatrzymujemy animację postaci
+    clearTimeout(this.liftCooldownTimer); // Zatrzymujemy timer windy
 
-    // Удаляем слушатели клавиатуры, добавленные в startGame
+    // Usuwamy nasłuchiwacze klawiatury dodane w startGame
     if (this._boundKeyDownHandler) window.removeEventListener('keydown', this._boundKeyDownHandler);
     if (this._boundKeyUpHandler) window.removeEventListener('keyup', this._boundKeyUpHandler);
-    this._boundKeyDownHandler = null; // Очищаем ссылки
+    this._boundKeyDownHandler = null; // Czyścimy referencje
     this._boundKeyUpHandler = null;
 
-    // Скрываем весь игровой UI
+    // Ukrywamy cały interfejs gry
     UIManager.hideGameUI();
     UIManager.hideQuestion();
     UIManager.hideFloorSelectionUI();
 
     if (win) {
-      // Рисуем экран победы
+      // Rysujemy ekran zwycięstwa
       requestAnimationFrame(() => this.renderer?.drawWinScreen());
     } else {
-      // При проигрыше/ошибке показываем главное меню
-      // Сообщение об ошибке уже должно было быть показано через _handleFatalError
+      // W przypadku przegranej/błędu pokazujemy menu główne
+      // Komunikat o błędzie powinien już zostać pokazany przez _handleFatalError
       const menuContainer = document.getElementById('menu-container');
-      if (menuContainer) menuContainer.style.display = 'flex'; // Используем flex для центрирования
+      if (menuContainer) menuContainer.style.display = 'flex'; // Używamy flex do centrowania
     }
-    console.log(`[Game] Game Over. Win: ${win}`);
+    console.log(`[Game] Koniec Gry. Wygrana: ${win}`);
   }
 
-  // Принудительная остановка игры (например, при выходе из игры)
+  // Wymuszone zatrzymanie gry (np. przy wyjściu z gry)
   stopGame() {
-    console.log('[Game] Explicit stop requested.');
-    this._setGameOver(false); // Завершаем игру как проигрыш/остановку
+    console.log('[Game] Zażądano jawnego zatrzymania.');
+    this._setGameOver(false); // Kończymy grę jako przegraną/zatrzymanie
 
-    // Удаляем общие слушатели (если были добавлены не в startGame)
+    // Usuwamy ogólne nasłuchiwacze (jeśli nie zostały dodane w startGame)
     window.removeEventListener('resize', () => this.renderer?.resizeCanvas());
 
-    // Освобождаем ресурсы (опционально, но хорошо для сборки мусора)
+    // Zwalniamy zasoby (opcjonalne, ale dobre dla garbage collectora)
     this.character = null;
     this.level = null;
     this.inputManager = null;
     this.renderer = null;
     this.gameplayManager = null;
     this.ctx = null;
-    this.canvas = null; // Ссылка на элемент остается, но в игре больше не используется
-    console.log('[Game] Game stopped and components potentially cleaned.');
+    this.canvas = null; // Referencja do elementu pozostaje, ale nie jest już używana w grze
+    console.log('[Game] Gra zatrzymana, komponenty potencjalnie wyczyszczone.');
   }
 
-  // Обработка фатальных ошибок
+  // Obsługa błędów krytycznych (fatal error)
   _handleFatalError(message, showAlert = true) {
-    console.error('[Game] FATAL ERROR:', message);
-    // Показываем alert только если запрошено и игра еще не закончена
+    console.error('[Game] BŁĄD KRYTYCZNY:', message);
+    // Pokazujemy alert tylko jeśli zażądano i gra jeszcze się nie zakończyła
     if (showAlert && this.gameState !== GameState.GAME_OVER) {
       alert(message);
     }
-    // Завершаем игру как проигрыш
+    // Kończymy grę jako przegraną
     this._setGameOver(false);
   }
 
-  // --- Обработчики ввода ---
+  // --- Handlery (obsługa) wejścia ---
   handleKeyDown(e) {
-    // Игнорируем ввод, если игра не в состоянии PLAYING или нет inputManager
+    // Ignorujemy wejście, jeśli gra nie jest w stanie PLAYING lub brakuje inputManager
     if (this.gameState !== GameState.PLAYING || !this.inputManager) return;
 
-    let keyHandled = false; // Флаг, чтобы предотвратить стандартное поведение браузера
+    let keyHandled = false; // Flaga zapobiegająca domyślnemu zachowaniu przeglądarki
     const key = e.key.toLowerCase();
 
-    // Сопоставление клавиш с действиями
+    // Mapowanie klawiszy na akcje
     if (key === 'arrowup' || key === 'w') {
       this.inputManager.setKey('up', true);
       keyHandled = true;
@@ -340,12 +345,12 @@ export class Game {
       keyHandled = true;
     }
 
-    // Предотвращаем скроллинг страницы стрелками, если клавиша обработана
+    // Zapobiegamy przewijaniu strony strzałkami, jeśli klawisz został obsłużony
     if (keyHandled) e.preventDefault();
   }
 
   handleKeyUp(e) {
-    // Обрабатываем отпускание клавиш всегда, чтобы сбросить состояние
+    // Zawsze obsługujemy puszczenie klawiszy, aby zresetować stan
     if (!this.inputManager) return;
     const key = e.key.toLowerCase();
 
@@ -360,43 +365,43 @@ export class Game {
     }
   }
 
-  // --- Основной игровой цикл ---
+  // --- Główna pętla gry ---
   gameLoop(timestamp) {
-    // Выходим из цикла, если игра остановлена или завершена
+    // Wychodzimy z pętli, jeśli gra jest zatrzymana lub zakończona
     if (!this.isRunning || this.gameState === GameState.GAME_OVER) {
       return;
     }
 
-    // 1. Обновление игровой логики (движение, взаимодействия)
+    // 1. Aktualizacja logiki gry (ruch, interakcje)
     this.gameplayManager?.update(timestamp);
 
-    // 2. Центрирование камеры (после обновления позиции персонажа)
+    // 2. Centrowanie kamery (po aktualizacji pozycji postaci)
     this.renderer?.centerCameraOnCharacter();
 
-    // 3. Отрисовка текущего кадра
+    // 3. Rysowanie bieżącej klatki
     this.renderer?.drawFrame();
 
-    // 4. Запрос следующего кадра анимации
+    // 4. Żądanie następnej klatki animacji
     requestAnimationFrame(this.gameLoop);
   }
 
-  // --- Управление таймером кулдауна лифта ---
+  // --- Zarządzanie timerem cooldownu windy ---
   startLiftCooldownTimer() {
-    clearTimeout(this.liftCooldownTimer); // Сбрасываем предыдущий таймер, если был
-    console.log(`[Game] Starting ${LIFT_COOLDOWN_MS}ms lift cooldown timer.`);
+    clearTimeout(this.liftCooldownTimer); // Resetujemy poprzedni timer, jeśli istniał
+    console.log(`[Game] Uruchamianie timera cooldownu windy ${LIFT_COOLDOWN_MS}ms.`);
     this.liftCooldownTimer = setTimeout(() => {
-      this.liftCooldownActive = false; // Снимаем флаг кулдауна
-      this.liftCooldownTimer = null; // Очищаем ID таймера
-      // Если игра все еще в состоянии перехода, значит, переход завершен
+      this.liftCooldownActive = false; // Zdejmujemy flagę cooldownu
+      this.liftCooldownTimer = null; // Czyścimy ID timera
+      // Jeśli gra jest nadal w stanie przejścia (TRANSITIONING), oznacza to, że przejście zostało zakończone
       if (this.gameState === GameState.TRANSITIONING) {
-        this.setGameState(GameState.PLAYING); // Возвращаем в игровое состояние
-        UIManager.flashMessage(`Прибытие на этаж ${this.level?.currentFloor}`, 'success', 1500);
+        this.setGameState(GameState.PLAYING); // Przywracamy stan gry (PLAYING)
+        UIManager.flashMessage(`Przybycie na piętro ${this.level?.currentFloor}`, 'success', 1500);
       } else {
-        // Если состояние изменилось (например, GAME_OVER), просто логируем
+        // Jeśli stan się zmienił (np. GAME_OVER), po prostu logujemy
         console.warn(
-          `[Game TIMER] Lift cooldown ended, but game state is ${this.gameState}. No state change applied.`
+          `[Game TIMER] Cooldown windy zakończony, ale stan gry to ${this.gameState}. Nie zastosowano zmiany stanu.`
         );
       }
     }, LIFT_COOLDOWN_MS);
   }
-} // Конец класса Game
+} // Koniec klasy Game
