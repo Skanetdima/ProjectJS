@@ -3,255 +3,74 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ucieczka ze Szkoły</title>
-    <style>
-      body {
-        margin: 0;
-        background-color: #333;
-        color: white;
-        font-family: sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-      }
-      .menu-container {
-        text-align: center;
-        background-color: #444;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-      }
-      .character-selection {
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        margin-bottom: 25px;
-        cursor: pointer;
-      }
-      .character-circle {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        border: 3px solid transparent;
-        transition: border-color 0.3s, transform 0.3s;
-      }
-      .character-circle.red {
-        background-color: #e74c3c;
-      }
-      .character-circle.blue {
-        background-color: #3498db;
-      }
-      .character-circle.yellow {
-        background-color: #f1c40f;
-      }
-      .character-circle.green {
-        background-color: #2ecc71;
-      }
-      .character-circle.selected {
-        border-color: #fff;
-        transform: scale(1.1);
-      }
-      .start-button {
-        padding: 12px 25px;
-        font-size: 18px;
-        cursor: pointer;
-        background-color: #5cb85c;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        transition: background-color 0.3s;
-      }
-      .start-button:disabled {
-        background-color: #999;
-        cursor: not-allowed;
-      }
-      .start-button:not(:disabled):hover {
-        background-color: #4cae4c;
-      }
-      canvas {
-        display: block; /* Убирает лишний отступ под канвасом */
-        background-color: #555; /* Фон для канваса, если карта не полностью его покрывает */
-      }
-
-      /* Стили для UI элементов (скопированы из предыдущих примеров, адаптируй под свои) */
-      .score-display {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        background: rgba(0, 0, 0, 0.6);
-        color: white;
-        padding: 8px 12px;
-        border-radius: 5px;
-        font-size: 18px;
-        z-index: 10;
-      }
-      .controls-container {
-        /* Стили для контейнера кнопок управления */
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        width: 150px;
-        height: 150px;
-        display: grid;
-        grid-template-areas: '. up .' 'left . right' '. down .';
-        gap: 5px;
-        z-index: 10;
-      }
-      .control-btn {
-        background: rgba(80, 80, 80, 0.7);
-        border: 2px solid rgba(200, 200, 200, 0.8);
-        color: white;
-        font-size: 24px;
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        user-select: none;
-      }
-      .control-btn.active {
-        background: rgba(120, 120, 120, 0.9);
-        border-color: white;
-      }
-      .control-btn.up {
-        grid-area: up;
-      }
-      .control-btn.down {
-        grid-area: down;
-      }
-      .control-btn.left {
-        grid-area: left;
-      }
-      .control-btn.right {
-        grid-area: right;
-      }
-      .ui-panel {
-        /* Общие стили для панелей вопросов/лифта */
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(50, 50, 70, 0.9);
-        border: 2px solid #aaa;
-        border-radius: 10px;
-        padding: 25px;
-        color: white;
-        z-index: 20;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-width: 300px;
-        max-width: 80%;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
-      }
-      .ui-panel h2 {
-        margin-top: 0;
-        margin-bottom: 20px;
-        color: #eee;
-      }
-      #question-box {
-        width: 100%;
-      }
-      #question-text {
-        margin-bottom: 20px;
-        font-size: 1.1em;
-      }
-      #answer-buttons,
-      #floor-buttons-container {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        width: 100%;
-      }
-      .answer-button,
-      .floor-button {
-        padding: 10px 15px;
-        font-size: 1em;
-        cursor: pointer;
-        background-color: #4a4a6a;
-        border: 1px solid #779;
-        color: white;
-        border-radius: 5px;
-        transition: background-color 0.2s;
-      }
-      .answer-button:hover,
-      .floor-button:not(:disabled):hover {
-        background-color: #5a5a8a;
-      }
-      .floor-button.current {
-        background-color: #778;
-        cursor: default;
-        opacity: 0.7;
-      }
-      .flash-message {
-        position: absolute;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        z-index: 30;
-        opacity: 0;
-        transition: opacity 0.5s ease-out;
-        font-size: 1.1em;
-        pointer-events: none;
-      }
-      .flash-success {
-        background-color: rgba(40, 150, 40, 0.85);
-      }
-      .flash-error {
-        background-color: rgba(180, 50, 50, 0.85);
-      }
-      .flash-info {
-        background-color: rgba(50, 100, 180, 0.85);
-      }
-      .flash-warning {
-        background-color: rgba(200, 150, 0, 0.85);
-      }
-    </style>
+    <title>Ucieczka z Uniwersytetu</title>
+    <!-- Added a default title -->
+    <link rel="stylesheet" href="main.css" />
+    <!-- Webpack or build tool will inject CSS/JS links if configured -->
   </head>
   <body>
+    <!-- Menu Container (Initially visible) -->
     <div id="menu-container" class="menu-container">
+      <!-- Removed inline style -->
       <h1>Ucieczka z Uniwersytetu</h1>
-      <!-- Tytuł -->
-
       <p>Wybierz postać:</p>
-      <!-- Wybór postaci -->
       <div id="character-selector-wrapper" class="character-selection">
+        <!-- Ensure classes match CSS -->
         <div class="character-circle red" data-color="red"></div>
         <div class="character-circle blue" data-color="blue"></div>
         <div class="character-circle yellow" data-color="yellow"></div>
         <div class="character-circle green" data-color="green"></div>
       </div>
-
-      <!-- Przycisk startu (początkowo nieaktywny) -->
       <button id="start-button" class="start-button" disabled>Rozpocznij grę</button>
     </div>
 
-    <!-- Główny Canvas -->
+    <!-- Game Canvas (Initially Hidden via CSS is better, but inline is ok too) -->
     <canvas id="game-canvas" style="display: none"></canvas>
 
-    <!-- Elementy UI -->
-    <div id="score-display" class="score-display" style="display: none">
+    <!-- In-Game UI Elements (Initially Hidden via CSS) -->
+    <!-- Use classes 'visible' or 'hidden' added by JS to control visibility -->
+
+    <div id="score-display" class="score-display">
+      <!-- Removed inline style -->
       Książki: <span id="score-value">0</span> / <span id="score-target">?</span>
     </div>
-    <div id="controls-container" class="controls-container" style="display: none"></div>
-    <div id="question-overlay" class="ui-panel" style="display: none">
-      <div id="question-box">
-        <p id="question-text"></p>
-        <div id="answer-buttons"></div>
+
+    <div id="controls-container" class="controls-container">
+      <!-- JS will populate buttons based on UIManager.createControls -->
+      <!-- Static buttons removed as JS creates them -->
+    </div>
+
+    <!-- Question Overlay (Blackboard) - Initially Hidden via CSS -->
+    <div id="question-overlay" class="ui-panel">
+      <!-- Removed inline style -->
+      <!-- Structure matches JS creation -->
+      <div id="blackboard-content">
+        <h2>Pytanie</h2>
+        <div id="question-box">
+          <p id="question-text"></p>
+          <div id="answer-buttons">
+            <!-- JS adds buttons here -->
+          </div>
+        </div>
       </div>
     </div>
-    <div id="floor-selection-ui" class="ui-panel" style="display: none">
-      <h2>Wybierz piętro</h2>
-      <div id="floor-buttons-container"></div>
-    </div>
-    <div id="flash-message-container" class="flash-message" style="display: none"></div>
 
-    <!-- Joystick (nieużywany obecnie, zostawiony w razie potrzeby) -->
-    <div id="joystick-container" style="display: none"></div>
+    <!-- Floor Selection Panel - Initially Hidden via CSS -->
+    <div id="floor-selection-ui" class="ui-panel">
+      <!-- Removed inline style -->
+      <!-- Structure matches JS creation -->
+      <h2>Wybierz piętro</h2>
+      <div id="floor-buttons-container">
+        <!-- JS adds buttons here -->
+      </div>
+    </div>
+
+    <!-- Container for dynamic flash messages -->
+    <div id="flash-message-container">
+      <!-- JS adds messages here -->
+    </div>
+
+    <!-- Build tool (like Webpack) usually injects the bundle script here -->
+    <!-- <script src="bundle.js"></script> -->
   </body>
 </html>

@@ -1,71 +1,80 @@
 // src/map/mapRenderer.js
 
 import { TILE_WALL, TILE_CORRIDOR, TILE_ROOM_FLOOR, TILE_LIFT } from '../utils/constants.js';
-import { randomGray, randomCorridorGray, adjustColorBrightness, simpleHash } from '../utils/map.js'; // Załóżmy, że istnieje simpleHash
+// Removed unused randomGray, randomCorridorGray imports
+import { adjustColorBrightness, simpleHash } from '../utils/map.js';
 
 export class MapRenderer {
   constructor(tileSize) {
     this.tileSize = tileSize;
-    this.tileColors = {}; // Cache dla spójnych kolorów kafelków na instancję mapy
-    this.baseWallColor = '#4a4a4a'; // Podstawowy kolor ścian
-    this.baseCorridorColor = '#a0a0a0'; // Podstawowy kolor korytarzy
-    this.baseRoomFloorColor = '#c0c0c0'; // Podstawowy kolor podłogi pokoju
+    // Cache is less critical now for base tiles but still useful for room floors/other elements
+    this.tileColors = {};
+    this.baseWallColor = '#1c1e22'; // Single, consistent wall color
+    this.baseCorridorColor = '#a0a0a0'; // Single, consistent corridor color
+    this.baseRoomFloorColor = '#c0c0c0'; // Default room floor (overwritten by drawRoomDetails)
+    this.liftColor = '#707080'; // Consistent lift color
+    this.errorColor = '#ff00ff'; // Error color
   }
 
-  // Zresetuj cache kolorów, gdy rysowana jest nowa mapa (wywoływane przez ProceduralMap)
+  // Reset color cache when a new map is drawn (called by ProceduralMap)
   resetColorCache() {
     this.tileColors = {};
   }
 
-  /** Pobierz lub wygeneruj kolor dla określonego kafelka */
+  /** Get or generate the color for a specific tile */
   getTileColor(r, c, tileValue, rooms) {
+    // NOTE: We still use the cache key, mainly useful if rooms need specific
+    // tile colors not handled by drawRoomDetails later, or if we add more complex logic.
+    // For the base tiles modified below, it's less essential.
     const key = `${r},${c}`;
     if (this.tileColors[key]) {
       return this.tileColors[key];
     }
 
     let color;
-    let brightnessFactor = 1.0;
-    // Używamy prostego hasha z koordynatów dla deterministycznej wariacji
-    const hash = simpleHash(r * 1000 + c); // Prosta funkcja hashująca oparta na koordynatach
-    const variation = ((hash % 21) - 10) / 100; // Wariacja od -0.1 do +0.1
+
+    // --- REMOVED per-tile hash/variation for base types ---
+    // const hash = simpleHash(r * 1000 + c);
+    // const variation = ((hash % 21) - 10) / 100;
 
     switch (tileValue) {
       case TILE_WALL:
-        // Kolor bazowy + deterministyczna wariacja
-        brightnessFactor = 0.9 + variation * 0.5; // Mniejsza wariacja dla ścian
-        color = adjustColorBrightness(this.baseWallColor, brightnessFactor);
+        // Use the single, consistent base color directly
+        color = this.baseWallColor;
         break;
       case TILE_CORRIDOR:
-        // Kolor bazowy + deterministyczna wariacja
-        brightnessFactor = 0.95 + variation;
-        color = adjustColorBrightness(this.baseCorridorColor, brightnessFactor);
+        // Use the single, consistent base color directly
+        color = this.baseCorridorColor;
         break;
       case TILE_ROOM_FLOOR:
-        // Kolor bazowy podłogi pokoju (zostanie nadpisany w drawRoomDetails)
+        // Use the consistent base room floor color.
+        // This will be overwritten by drawRoomDetails for actual room tiles.
+        // It serves as the color if a TILE_ROOM_FLOOR somehow exists outside a defined room.
         color = this.baseRoomFloorColor;
         break;
       case TILE_LIFT:
-        // Kolor windy - można zrobić ciekawszy
-        color = '#707080'; // Trochę jaśniejszy
+        // Use the consistent lift color
+        color = this.liftColor;
         break;
       default:
-        color = '#ff00ff'; // Kolor błędu
+        color = this.errorColor; // Error color
         break;
     }
+
+    // Still cache the result
     this.tileColors[key] = color;
     return color;
   }
 
-  /** Główna funkcja rysująca */
+  /** Main drawing function */
   draw(ctx, mapData, bookImage = null) {
     const { map, rooms, books, liftPosition, offsetX, offsetY, cols, rows } = mapData;
 
-    // Zaokrąglij przesunięcia dla ostrości
+    // Round offsets for sharpness
     const currentOffsetX = Math.floor(offsetX);
     const currentOffsetY = Math.floor(offsetY);
 
-    // Określ widoczne kafelki z małym zapasem
+    // Determine visible tiles with a small buffer
     const startCol = Math.max(0, Math.floor(-currentOffsetX / this.tileSize) - 1);
     const endCol = Math.min(
       cols,
@@ -77,15 +86,14 @@ export class MapRenderer {
       Math.ceil((-currentOffsetY + ctx.canvas.height) / this.tileSize) + 1
     );
 
-    ctx.save(); // Zapisz stan kontekstu
-    // Wyłącz wygładzanie dla pixel-artu (jeśli potrzebne)
-    // ctx.imageSmoothingEnabled = false; // Już w GameRenderer
+    ctx.save(); // Save context state
 
-    // 1. Narysuj podstawowe kafelki (ściany, korytarze, domyślna podłoga, baza windy)
+    // 1. Draw base tiles (walls, corridors, default floor, lift base)
+    //    These will now use the consistent colors from getTileColor.
     this.drawBaseTiles(
       ctx,
       map,
-      rooms, // Przekazujemy rooms do getTileColor, jeśli będzie potrzebne
+      rooms,
       currentOffsetX,
       currentOffsetY,
       cols,
@@ -96,12 +104,14 @@ export class MapRenderer {
       endCol
     );
 
-    // 2. Narysuj specyficzne podłogi i dekoracje pokoi
+    // 2. Draw specific room floors and decorations
+    //    This function WILL apply specific colors based on room type,
+    //    and subtle per-tile variations WITHIN the room floor.
     this.drawRoomDetails(
       ctx,
       map,
       rooms,
-      liftPosition, // Przekazujemy pozycję windy do sprawdzenia
+      liftPosition,
       currentOffsetX,
       currentOffsetY,
       cols,
@@ -112,44 +122,42 @@ export class MapRenderer {
       endCol
     );
 
-    // 3. Narysuj detale windy (nad podłogami pokoi, jeśli konieczne)
+    // 3. Draw lift details (overlaying room floors if needed)
     this.drawLiftDetails(ctx, liftPosition, currentOffsetX, currentOffsetY);
 
-    // 4. Narysuj książki
+    // 4. Draw books
     this.drawBooks(ctx, books, currentOffsetX, currentOffsetY, bookImage);
 
-    ctx.restore(); // Przywróć stan kontekstu
+    ctx.restore(); // Restore context state
   }
 
-  /** Narysuj podstawowe kafelki */
+  /** Draw base tiles */
   drawBaseTiles(ctx, map, rooms, offsetX, offsetY, cols, rows, startRow, endRow, startCol, endCol) {
     ctx.save();
-    // Usunąłem domyślny cień, będziemy dodawać tam, gdzie trzeba
     ctx.shadowColor = 'transparent';
 
-    const wallEdgeColorDark = '#383838'; // Ciemniejszy dla cienia/dołu
-    const wallEdgeColorLight = '#606060'; // Jaśniejszy dla góry/oświetlenia
-    const wallTopEdgeColor = '#757575'; // Najjaśniejszy góra
+    const wallEdgeColorDark = '#383838';
+    const wallEdgeColorLight = '#606060';
+    const wallTopEdgeColor = '#757575';
 
     for (let r = startRow; r < endRow; r++) {
       for (let c = startCol; c < endCol; c++) {
         const tileValue = map[r]?.[c];
         if (tileValue === undefined) continue;
 
-        // Zaokrąglij współrzędne rysowania do liczb całkowitych!
         const screenX = Math.floor(c * this.tileSize + offsetX);
         const screenY = Math.floor(r * this.tileSize + offsetY);
+        // Get the color - now consistent for walls/corridors/default floor/lift
         const color = this.getTileColor(r, c, tileValue, rooms);
 
         ctx.fillStyle = color;
         ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
 
-        // --- Ulepszone rysowanie ścian i krawędzi ---
+        // --- Wall Edges and Noise (Still Applied for Detail) ---
         if (tileValue === TILE_WALL) {
-          // Prosta tekstura szumu dla ściany
-          ctx.fillStyle = 'rgba(0,0,0,0.06)'; // Półprzezroczysty czarny
+          // Noise texture (applied ON TOP of the consistent base color)
+          ctx.fillStyle = 'rgba(0,0,0,0.06)';
           for (let i = 0; i < 5; i++) {
-            // Kilka punktów szumu
             ctx.fillRect(
               screenX + Math.random() * this.tileSize,
               screenY + Math.random() * this.tileSize,
@@ -158,25 +166,20 @@ export class MapRenderer {
             );
           }
 
-          // Rysujemy krawędzie tylko jeśli sąsiad NIE jest ścianą
-          const edgeSize = 2; // Grubość krawędzi
-
-          // Górna krawędź (najjaśniejsza)
+          // Edge rendering (applied ON TOP)
+          const edgeSize = 2;
           if (r > 0 && map[r - 1]?.[c] !== TILE_WALL) {
             ctx.fillStyle = wallTopEdgeColor;
             ctx.fillRect(screenX, screenY, this.tileSize, edgeSize);
           }
-          // Dolna krawędź (ciemna)
           if (r < rows - 1 && map[r + 1]?.[c] !== TILE_WALL) {
             ctx.fillStyle = wallEdgeColorDark;
             ctx.fillRect(screenX, screenY + this.tileSize - edgeSize, this.tileSize, edgeSize);
           }
-          // Lewa krawędź (jasna)
           if (c > 0 && map[r]?.[c - 1] !== TILE_WALL) {
             ctx.fillStyle = wallEdgeColorLight;
-            ctx.fillRect(screenX, screenY + edgeSize, edgeSize, this.tileSize - edgeSize); // Zaczynamy poniżej górnej krawędzi
+            ctx.fillRect(screenX, screenY + edgeSize, edgeSize, this.tileSize - edgeSize);
           }
-          // Prawa krawędź (ciemna)
           if (c < cols - 1 && map[r]?.[c + 1] !== TILE_WALL) {
             ctx.fillStyle = wallEdgeColorDark;
             ctx.fillRect(
@@ -184,11 +187,9 @@ export class MapRenderer {
               screenY + edgeSize,
               edgeSize,
               this.tileSize - edgeSize
-            ); // Zaczynamy poniżej górnej krawędzi
+            );
           }
-
-          // Narożniki (opcjonalnie, dla wygładzenia)
-          // Wewnętrzny górny lewy róg
+          // Corner logic (remains the same)
           if (
             r > 0 &&
             c > 0 &&
@@ -196,10 +197,9 @@ export class MapRenderer {
             map[r]?.[c - 1] !== TILE_WALL &&
             map[r - 1]?.[c - 1] !== TILE_WALL
           ) {
-            ctx.fillStyle = wallEdgeColorLight; // Kompromisowy kolor
+            ctx.fillStyle = wallEdgeColorLight;
             ctx.fillRect(screenX, screenY, edgeSize, edgeSize);
           }
-          // Wewnętrzny górny prawy róg
           if (
             r > 0 &&
             c < cols - 1 &&
@@ -207,13 +207,13 @@ export class MapRenderer {
             map[r]?.[c + 1] !== TILE_WALL &&
             map[r - 1]?.[c + 1] !== TILE_WALL
           ) {
-            ctx.fillStyle = wallTopEdgeColor; // Jasny bo z góry
+            ctx.fillStyle = wallTopEdgeColor;
             ctx.fillRect(screenX + this.tileSize - edgeSize, screenY, edgeSize, edgeSize);
           }
-          // itd. dla dolnych rogów...
+          // ... potentially other corners
         } else if (tileValue === TILE_CORRIDOR) {
-          // Bardzo lekka tekstura dla korytarza
-          ctx.fillStyle = 'rgba(255,255,255,0.03)'; // Ledwo widoczny biały szum
+          // Corridor Noise (applied ON TOP of the consistent base color)
+          ctx.fillStyle = 'rgba(255,255,255,0.03)';
           for (let i = 0; i < 3; i++) {
             ctx.fillRect(
               screenX + Math.random() * this.tileSize,
@@ -223,17 +223,19 @@ export class MapRenderer {
             );
           }
         }
+        // NOTE: No special drawing needed here for TILE_ROOM_FLOOR or TILE_LIFT
+        // as drawRoomDetails and drawLiftDetails handle their specifics.
       }
     }
     ctx.restore();
   }
 
-  /** Narysuj specyficzne podłogi i dekoracje pokoi */
+  /** Draw specific room floors and decorations */
   drawRoomDetails(
     ctx,
     map,
     rooms,
-    liftPosition, // Dodaliśmy liftPosition
+    liftPosition,
     offsetX,
     offsetY,
     cols,
@@ -244,10 +246,9 @@ export class MapRenderer {
     endCol
   ) {
     ctx.save();
-    ctx.shadowColor = 'transparent'; // Brak cieni dla detali pokoju
+    ctx.shadowColor = 'transparent';
 
     for (const room of rooms) {
-      // Podstawowe sprawdzenie widoczności dla ramki pokoju
       if (
         room.col + room.width < startCol ||
         room.col > endCol ||
@@ -261,36 +262,56 @@ export class MapRenderer {
       const roomScreenW = room.width * this.tileSize;
       const roomScreenH = room.height * this.tileSize;
 
-      // --- Określenie Koloru Podłogi ---
-      // Użyjemy spójnego, ale zróżnicowanego koloru bazowego dla typu
-      let floorColor = this.baseRoomFloorColor; // Domyślny szary
-      let roomSeed = room.id + this.floorNumber * 100; // Prosty seed oparty na ID pokoju i piętrze
+      // --- Determine Floor Color Based on Room Type (This logic remains) ---
+      let floorColor = this.baseRoomFloorColor; // Start with default
+      // Use a seed that changes per room but is consistent for that room
+      // Added floorNumber dependency if available in `this`, otherwise use room.id
+      const floorNum = typeof this.floorNumber === 'number' ? this.floorNumber : 0;
+      let roomSeed = simpleHash(room.id) + floorNum * 100; // Use hash of ID for more variation
 
       switch (room.type) {
         case 'classroom':
           floorColor = adjustColorBrightness('#a0c8e0', 0.9 + (simpleHash(roomSeed) % 11) / 100);
-          break; // Niebieskawy
+          break; // Bluish
         case 'office':
-          floorColor = adjustColorBrightness('#f0e8c0', 0.9 + (simpleHash(roomSeed) % 11) / 100);
-          break; // Beżowy
+          floorColor = adjustColorBrightness(
+            '#f0e8c0',
+            0.9 + (simpleHash(roomSeed + 1) % 11) / 100
+          );
+          break; // Beige
         case 'library':
-          floorColor = adjustColorBrightness('#d8c0a8', 0.9 + (simpleHash(roomSeed) % 11) / 100);
-          break; // Drewniany
+          floorColor = adjustColorBrightness(
+            '#d8c0a8',
+            0.9 + (simpleHash(roomSeed + 2) % 11) / 100
+          );
+          break; // Wooden
         case 'gym':
-          floorColor = adjustColorBrightness('#b0d0b0', 0.9 + (simpleHash(roomSeed) % 11) / 100);
-          break; // Zielonkawy
+          floorColor = adjustColorBrightness(
+            '#b0d0b0',
+            0.9 + (simpleHash(roomSeed + 3) % 11) / 100
+          );
+          break; // Greenish
         case 'lab':
-          floorColor = adjustColorBrightness('#e0e0ff', 0.9 + (simpleHash(roomSeed) % 11) / 100);
-          break; // Jasny niebiesko-fioletowy
+          floorColor = adjustColorBrightness(
+            '#e0e0ff',
+            0.9 + (simpleHash(roomSeed + 4) % 11) / 100
+          );
+          break; // Light blue-purple
         case 'storage':
-          floorColor = adjustColorBrightness('#b0a090', 0.9 + (simpleHash(roomSeed) % 11) / 100);
-          break; // Szaro-brązowy
+          floorColor = adjustColorBrightness(
+            '#b0a090',
+            0.9 + (simpleHash(roomSeed + 5) % 11) / 100
+          );
+          break; // Gray-brown
         case 'utility':
-          floorColor = adjustColorBrightness('#b0b0b0', 0.9 + (simpleHash(roomSeed) % 11) / 100);
-          break; // Szary beton
+          floorColor = adjustColorBrightness(
+            '#b0b0b0',
+            0.9 + (simpleHash(roomSeed + 6) % 11) / 100
+          );
+          break; // Gray concrete
       }
 
-      // --- Rysowanie Podłogi Pokoju (kafelek po kafelku w widocznym obszarze) ---
+      // --- Draw Room Floor (Tile by Tile within Visible Area) ---
       for (
         let r = Math.max(room.row, startRow);
         r < Math.min(room.row + room.height, endRow);
@@ -302,28 +323,22 @@ export class MapRenderer {
           c++
         ) {
           const tileValue = map[r]?.[c];
-          // --- FIX WINDY i MIGOTANIA ---
-          // Rysujemy podłogę TYLKO jeśli to TILE_ROOM_FLOOR
-          // (nie rysujemy na ścianach, korytarzach I WINDZIE)
+          // Only draw if it's actually a TILE_ROOM_FLOOR
           if (tileValue === TILE_ROOM_FLOOR) {
             const screenX = Math.floor(c * this.tileSize + offsetX);
             const screenY = Math.floor(r * this.tileSize + offsetY);
 
-            // Deterministyczna wariacja jasności dla każdego kafelka podłogi
-            const tileHash = simpleHash(r * 5000 + c * 3 + room.id); // Hash z uwzględnieniem pokoju
-            const variation = ((tileHash % 11) - 5) / 100; // Wariacja -0.05 do +0.05
+            // --- Subtle Per-Tile Variation WITHIN Room Floor (Kept for texture) ---
+            const tileHash = simpleHash(r * 5000 + c * 3 + roomSeed); // Include roomSeed
+            const variation = ((tileHash % 11) - 5) / 100; // Variation -0.05 to +0.05
             const brightnessFactor = 0.98 + variation;
             ctx.fillStyle = adjustColorBrightness(floorColor, brightnessFactor);
+            // --- End Per-Tile Variation ---
 
             ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
 
-            // Opcjonalna dodatkowa tekstura podłogi (np. linie, wzór)
-            // if (room.type === 'gym' && (r + c) % 2 === 0) { // Prosty wzór szachownicy dla siłowni
-            //   ctx.fillStyle = 'rgba(0,0,0,0.05)';
-            //   ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
-            // }
+            // Optional floor texture (remains the same)
             if (room.type === 'lab') {
-              // Linie siatki dla laboratorium
               ctx.strokeStyle = 'rgba(0,0,0,0.08)';
               ctx.lineWidth = 1;
               ctx.strokeRect(screenX + 0.5, screenY + 0.5, this.tileSize - 1, this.tileSize - 1);
@@ -332,13 +347,14 @@ export class MapRenderer {
         }
       }
 
-      // --- Rysowanie Dekoracji (używając współrzędnych ekranu) ---
-      // Przekazujemy screenX, screenY, W, H pokoju
+      // --- Draw Decorations (remains the same) ---
       this.drawRoomDecorations(ctx, room, roomScreenX, roomScreenY, roomScreenW, roomScreenH);
     }
     ctx.restore();
   }
 
+  // --- drawLiftDetails, drawRoomDecorations, drawBooks remain unchanged ---
+  // ... (keep the existing code for these methods) ...
   /** Narysuj detale windy (przycisk, kontur) */
   drawLiftDetails(ctx, liftPosition, offsetX, offsetY) {
     if (!liftPosition) return;
@@ -607,39 +623,39 @@ export class MapRenderer {
     const defaultBookSize = this.tileSize * 0.6;
 
     for (const book of books) {
-      const isCollected = book.isCollected || book.collected; // Obsłuż obie potencjalne właściwości
+      const isCollected = book.isCollected || book.collected; // Handle both potential properties
       if (!isCollected) {
         const bookSize = book.size || defaultBookSize;
-        // Zaokrąglij współrzędne rysowania
+        // Round drawing coordinates
         const screenX = Math.floor(book.x + offsetX - bookSize / 2);
         const screenY = Math.floor(book.y + offsetY - bookSize / 2);
 
-        // Podstawowe sprawdzenie widoczności
+        // Basic visibility check
         if (
           screenX + bookSize > 0 &&
           screenX < ctx.canvas.width &&
           screenY + bookSize > 0 &&
           screenY < ctx.canvas.height
         ) {
-          // Preferuj własną metodę rysowania książki, jeśli dostępna
+          // Prefer book's own draw method if available
           if (typeof book.draw === 'function') {
-            // Przekazujemy zaokrąglone współrzędne i rozmiar
-            book.draw(ctx, offsetX, offsetY, bookImage); // book.draw sama powinna zaokrąglać
+            // Pass rounded coordinates and size
+            book.draw(ctx, offsetX, offsetY, bookImage); // book.draw should handle its own rounding if needed internally
           } else {
-            // Rysowanie zapasowe
+            // Fallback drawing
             if (bookImage) {
-              // Rysujemy z zaokrąglonymi współrzędnymi
+              // Draw with rounded coordinates
               ctx.drawImage(bookImage, screenX, screenY, bookSize, bookSize);
             } else {
-              ctx.fillStyle = '#8d6e63'; // Brązowy kolor książki
+              ctx.fillStyle = '#8d6e63'; // Brown book color
               ctx.fillRect(screenX, screenY, bookSize, bookSize);
-              ctx.strokeStyle = '#5d4037'; // Ciemniejszy kontur
+              ctx.strokeStyle = '#5d4037'; // Darker outline
               ctx.lineWidth = 1;
-              ctx.strokeRect(screenX + 0.5, screenY + 0.5, bookSize - 1, bookSize - 1); // Rysujemy ramkę wyraźniej
+              ctx.strokeRect(screenX + 0.5, screenY + 0.5, bookSize - 1, bookSize - 1); // Draw border more clearly
             }
           }
         }
       }
     }
   }
-} // Koniec klasy MapRenderer
+} // End class MapRenderer

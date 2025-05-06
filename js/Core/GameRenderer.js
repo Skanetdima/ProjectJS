@@ -59,25 +59,25 @@ export class GameRenderer {
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     this.ctx.fillStyle = 'lime';
-    this.ctx.font = 'clamp(32px, 8vw, 48px) "Press Start 2P", cursive, Arial';
-    this.ctx.fillText('ПОБЕДА!', this.canvas.width / 2, this.canvas.height / 2 - 80);
+    // Consider using a font available on most systems or include one via CSS @font-face
+    this.ctx.font = 'clamp(32px, 8vw, 48px) "Press Start 2P", cursive, Arial, sans-serif';
+    this.ctx.fillText('ZWYCIĘSTWO!', this.canvas.width / 2, this.canvas.height / 2 - 80); // Translated
     this.ctx.fillStyle = 'white';
     this.ctx.font = 'clamp(24px, 5vw, 32px) Arial, sans-serif';
     this.ctx.fillText(
-      `Вы собрали все ${this.game.targetBooksToWin} книг!`,
+      `Zebrano wszystkie ${this.game.targetBooksToWin} książki!`, // Translated
       this.canvas.width / 2,
       this.canvas.height / 2
     );
     this.ctx.font = 'clamp(18px, 4vw, 24px) Arial, sans-serif';
-    this.ctx.fillText('Университет спасен!', this.canvas.width / 2, this.canvas.height / 2 + 60);
+    this.ctx.fillText('Uniwersytet uratowany!', this.canvas.width / 2, this.canvas.height / 2 + 60); // Translated
     this.ctx.font = 'clamp(14px, 3vw, 18px) Arial, sans-serif';
     this.ctx.fillStyle = '#ccc';
     this.ctx.fillText(
-      '(Обновите страницу, чтобы начать заново)',
+      '(Odśwież stronę, aby zagrać ponownie)', // Translated
       this.canvas.width / 2,
       this.canvas.height - 50
     );
   }
-
   // drawDebugInfo() { ... } // Optional debug drawing
 }

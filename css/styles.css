@@ -1,108 +1,125 @@
-/* General Reset & Body */
+/* --- Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'); /* Modern UI Font */
+@import url('https://fonts.googleapis.com/css2?family=Caveat&display=swap'); /* Chalk Font */
+
+/* --- General Reset & Body --- */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  /* Отключаем выделение текста для интерактивных элементов */
-  user-select: none;
-  -webkit-user-select: none; /* Safari */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* IE/Edge */
 }
 
-html,
+html {
+  font-size: 16px; /* Base font size for rem units */
+}
+
 body {
-  height: 100%; /* Убедимся, что body занимает всю высоту */
-  overflow: hidden; /* Предотвращаем скролл */
-  background-color: #222; /* Фон страницы */
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Шрифт по умолчанию */
-  color: #eee; /* Светлый текст по умолчанию */
-  /* Центрируем меню по умолчанию */
-  display: flex;
+  /* Use min-height to allow content stretching if needed, but keep full height feel */
+  min-height: 100vh;
+  overflow: hidden; /* Prevent scrollbars */
+  background-color: #282c34; /* Slightly softer dark background */
+  font-family: 'Inter', sans-serif; /* Modern font */
+  color: #e0e0e0; /* Light grey text */
+  display: flex; /* Helps center menu initially */
   justify-content: center;
   align-items: center;
+  line-height: 1.6;
 }
 
-/* --- Canvas --- */
-canvas {
-  display: block; /* Убирает отступ под canvas */
-  background-color: #111; /* Фон для канваса, если карта не покрывает */
-  width: 100%; /* Занимает всю доступную ширину/высоту */
-  height: 100%;
-  /* Настройки для пиксельной графики */
-  image-rendering: pixelated; /* Четкие пиксели (современный стандарт) */
-  image-rendering: -moz-crisp-edges; /* Firefox */
-  image-rendering: -webkit-optimize-contrast; /* Старый WebKit (может не работать) */
-  /* Свойство 'crisp-edges' может быть предпочтительнее для некоторых браузеров */
-  /* image-rendering: crisp-edges; */
+/* --- Loading Overlay --- */
+.loading-overlay {
+  position: fixed;
+  inset: 0; /* top, right, bottom, left = 0 */
+  background-color: rgba(20, 22, 26, 0.9);
+  display: none; /* Hidden by default */
+  justify-content: center;
+  align-items: center;
+  z-index: 2000; /* Highest */
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
+  visibility: hidden;
+}
+.loading-overlay.visible {
+  display: flex;
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 /* --- Menu Container --- */
 .menu-container {
-  background: rgba(0, 0, 0, 0.85);
-  padding: clamp(20px, 5vw, 40px); /* Адаптивный паддинг */
-  border-radius: 4px; /* !!! МЕНЬШЕ СКРУГЛЕНИЕ */
-  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.7); /* Более выраженная тень */
+  background: rgba(48, 52, 60, 0.95);
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  border-radius: 8px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
   text-align: center;
-  z-index: 1000; /* Выше игровых элементов */
+  z-index: 1000; /* Below overlays, above canvas */
   opacity: 1;
-  transition: opacity 0.4s ease-out, transform 0.4s ease-out; /* Плавное появление/исчезание */
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out, visibility 0s linear 0s;
   transform: scale(1);
-  max-width: 90%; /* Ограничение ширины */
-  width: 450px; /* Примерная ширина */
+  max-width: 500px; /* Slightly wider */
+  width: 90%;
+  display: flex; /* Default display */
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  visibility: visible;
 }
-
-/* Класс для скрытия меню */
+/* Class to hide the menu */
 .menu-container.hidden {
   opacity: 0;
   transform: scale(0.95);
-  pointer-events: none; /* Чтобы нельзя было кликнуть сквозь невидимое меню */
+  pointer-events: none; /* Prevent interaction when hidden */
+  visibility: hidden;
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out, visibility 0s linear 0.4s; /* Delay visibility change */
 }
 
 .menu-container h1 {
-  margin-bottom: 15px;
-  font-size: clamp(1.8em, 6vw, 2.5em);
-  color: #fff;
-  /* font-family: 'Press Start 2P', cursive; /* Если подключен пиксельный шрифт */
+  margin-bottom: 1rem;
+  font-size: clamp(1.8rem, 6vw, 2.5rem);
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .menu-container p {
-  margin-bottom: 20px;
-  font-size: clamp(1em, 3vw, 1.2em);
-  color: #ccc;
+  margin-bottom: 1.8rem;
+  font-size: clamp(1rem, 3vw, 1.1rem);
+  color: #b0b0b0;
 }
 
 /* --- Character Selection --- */
 .character-selection {
   display: flex;
-  flex-wrap: wrap; /* Перенос на новую строку при нехватке места */
+  flex-wrap: wrap;
   justify-content: center;
-  gap: clamp(15px, 3vw, 25px); /* Адаптивный отступ между кружками */
-  margin-bottom: 30px; /* Отступ до кнопки */
+  gap: clamp(1rem, 3vw, 1.5rem);
+  margin-bottom: 2rem;
 }
 
 .character-circle {
-  width: clamp(55px, 12vw, 70px); /* Адаптивный размер */
-  height: clamp(55px, 12vw, 70px);
-  border-radius: 50%; /* Оставим кружками для выбора */
+  width: clamp(60px, 12vw, 75px);
+  height: clamp(60px, 12vw, 75px);
+  border-radius: 50%;
   cursor: pointer;
-  border: 4px solid transparent; /* Рамка для выделения */
+  border: 4px solid transparent;
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  background-size: cover; /* Для фоновых картинок, если будут */
+  background-size: cover;
   background-position: center;
-  position: relative; /* Для возможного добавления элементов внутрь */
+  position: relative;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
-
 .character-circle:hover {
-  transform: scale(1.1); /* Увеличение при наведении */
+  transform: scale(1.08);
 }
 .character-circle.selected {
-  transform: scale(1.15); /* Сильнее выделяем выбранный */
-  border-color: #fff; /* Белая рамка */
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.6); /* Свечение */
+  transform: scale(1.12);
+  border-color: #61dafb; /* Accent color */
+  box-shadow: 0 0 18px rgba(97, 218, 251, 0.5);
 }
-
-/* Цвета персонажей */
+/* Keep background colors */
 .character-circle.red {
   background-color: #e53935;
 }
@@ -118,319 +135,460 @@ canvas {
 
 /* --- Start Button --- */
 .start-button {
-  padding: 12px 30px;
-  font-size: clamp(16px, 4vw, 18px);
+  padding: 0.8rem 2rem;
+  font-size: clamp(1rem, 4vw, 1.1rem);
   cursor: pointer;
-  background-color: #4caf50; /* Зеленый */
+  background-image: linear-gradient(to right, #56ab2f 0%, #a8e063 51%, #56ab2f 100%);
+  background-size: 200% auto;
   color: white;
   border: none;
-  border-radius: 2px; /* !!! ПОЧТИ КВАДРАТНЫЙ */
-  transition: background-color 0.3s, transform 0.1s ease, opacity 0.3s;
-  font-weight: bold;
-  text-transform: uppercase; /* Заглавные буквы */
+  border-radius: 6px;
+  transition: background-position 0.4s ease, transform 0.1s ease, opacity 0.3s;
+  font-weight: 600;
+  text-transform: uppercase;
   letter-spacing: 1px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
-
 .start-button:disabled {
-  background-color: #6c757d; /* Серый для неактивной */
+  background-image: none;
+  background-color: #5a5f6a;
   cursor: not-allowed;
   opacity: 0.6;
+  box-shadow: none;
 }
-
 .start-button:not(:disabled):hover {
-  background-color: #45a049; /* Темнее при наведении */
+  background-position: right center; /* change the direction of the change here */
+  color: #fff;
+  text-decoration: none;
 }
 .start-button:not(:disabled):active {
-  transform: scale(0.98); /* Эффект нажатия */
+  transform: scale(0.97);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* --- Game Canvas --- */
+canvas#game-canvas {
+  /* display: none; Replaced by inline style initially, JS will control */
+  background-color: #1c1e22; /* Darker canvas background */
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 50; /* Below UI */
 }
 
 /* --- In-Game UI Elements --- */
 
-/* Общие стили панели (Вопросы, Выбор этажа) */
+/* Score Display */
+.score-display {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  background-color: rgba(40, 44, 52, 0.85);
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: clamp(0.9rem, 3vw, 1rem);
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  z-index: 100; /* Below panels/overlays */
+  display: none; /* Hidden by default */
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.score-display.visible {
+  display: block; /* Or flex/grid if needed */
+  opacity: 1;
+}
+#score-display #score-value {
+  color: #fdd835;
+  font-weight: 700;
+}
+#score-display #score-target {
+  color: #b0b0b0;
+}
+
+/* On-Screen Controls (Mobile/Touch) */
+.controls-container {
+  position: fixed;
+  bottom: clamp(1rem, 4vh, 2rem);
+  right: clamp(1rem, 4vw, 2rem);
+  display: none; /* Hidden by default */
+  grid-template-areas:
+    '. up .'
+    'left . right'
+    '. down .';
+  gap: clamp(0.6rem, 2vw, 0.8rem);
+  z-index: 100; /* Below panels/overlays */
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+.controls-container.visible {
+  display: grid;
+  opacity: 1; /* Less transparent when visible */
+}
+
+.control-btn {
+  width: clamp(50px, 13vw, 65px); /* Slightly larger */
+  height: clamp(50px, 13vw, 65px);
+  border-radius: 6px;
+  background: rgba(50, 55, 65, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: clamp(1.5rem, 6vw, 1.8rem);
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
+}
+.control-btn.active, /* Class added by JS */
+.control-btn:active {
+  /* Pseudo-class for mouse click */
+  background: rgba(70, 75, 85, 0.95);
+  transform: scale(0.95);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+/* Grid area assignment is done via inline style in JS now, but keep classes for potential overrides */
+.control-btn.up {
+  /* grid-area: up; */
+}
+.control-btn.left {
+  /* grid-area: left; */
+}
+.control-btn.right {
+  /* grid-area: right; */
+}
+.control-btn.down {
+  /* grid-area: down; */
+}
+
+/* --- UI Panels (General & Specific) --- */
+
+/* Base Panel Style */
 .ui-panel {
-  position: fixed; /* Используем fixed для позиционирования относительно viewport */
+  position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%); /* Центрирование */
-  background-color: rgba(45, 45, 55, 0.95); /* Полупрозрачный темный фон */
-  color: #f0f0f0; /* Светлый текст */
-  padding: clamp(20px, 4vw, 30px);
-  border: 1px solid #667; /* Рамка */
-  border-radius: 4px; /* !!! МЕНЬШЕ СКРУГЛЕНИЕ */
-  text-align: center;
-  z-index: 200; /* Выше игровых элементов, но ниже меню */
-  width: clamp(300px, 85vw, 550px); /* Адаптивная ширина */
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
-  display: none; /* Скрыто по умолчанию */
-  flex-direction: column; /* Элементы внутри - колонкой */
-  align-items: center; /* Центрирование по горизонтали */
-  gap: 15px; /* Отступ между элементами внутри панели */
-  opacity: 0; /* Начальная прозрачность для анимации */
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-  transform: translate(-50%, -50%) scale(0.95); /* Начальный масштаб для анимации */
+  color: #e0e0e0;
+  padding: clamp(1.5rem, 4vw, 2rem);
+  z-index: 1050; /* High z-index for panels */
+  width: clamp(320px, 85vw, 600px); /* Responsive width */
+  max-width: 90%;
+  display: flex; /* Changed from none to flex for default layout */
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  border-radius: 8px; /* Consistent radius */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  /* Default hidden state for transitions */
+  opacity: 0;
+  visibility: hidden; /* Use visibility for accessibility and preventing interaction */
+  transform: translate(-50%, -45%) scale(0.98); /* Start slightly up and smaller */
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out, visibility 0s linear 0.3s; /* Delay visibility change */
 }
-/* Класс для показа панели */
+/* Class added by JS to show panels */
 .ui-panel.visible {
-  display: flex; /* Показываем через flex */
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  visibility: visible; /* Show */
+  transform: translate(-50%, -50%) scale(1); /* Animate in */
+  transition-delay: 0s; /* Remove delay for visibility when becoming visible */
+}
+.ui-panel h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: clamp(1.4rem, 4.5vw, 1.8rem);
+  color: #ffffff;
+  font-weight: 700;
+  text-align: center;
 }
 
-/* Панель Вопросов */
+/* =================================== */
+/* Blackboard Styling Override         */
+/* =================================== */
+#question-overlay {
+  /* Inherits .ui-panel positioning, width, display, transitions, etc. */
+  /* The .visible class will control its appearance */
+
+  /* --- Blackboard Appearance --- */
+  background-color: #2a3f2a; /* Dark green */
+  border: 18px solid #8b4513; /* Wood border */
+  border-radius: 5px; /* Blackboard radius */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6); /* Overrides base panel shadow */
+  padding: clamp(1.5rem, 4vw, 2rem); /* Can adjust padding if needed */
+
+  /* --- Text Defaults (Override base panel if needed) --- */
+  color: #f0f0f0; /* Default text color inside blackboard */
+  /* Keep default font for non-chalk elements unless needed */
+}
+
+/* Inner content wrapper */
+#blackboard-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem; /* Add gap between title, question box */
+}
+
+/* Chalk Text Styling */
+#question-overlay h2,
 #question-overlay #question-text {
-  font-size: clamp(1.1em, 3.5vw, 1.4em); /* Адаптивный размер шрифта */
-  line-height: 1.5; /* Межстрочный интервал */
-  margin-bottom: 15px; /* Отступ снизу */
-  color: #fff; /* Белый цвет текста вопроса */
+  color: #f5f5f5; /* Brighter chalk */
+  font-family: 'Caveat', cursive, sans-serif; /* Chalky font */
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3); /* Softer shadow */
+  text-align: center;
+  margin: 0; /* Reset margin for these elements */
+  width: 100%; /* Ensure they take full width */
 }
 
+/* Title Specifics */
+#question-overlay h2 {
+  font-size: clamp(1.8rem, 5vw, 2.2rem); /* Larger title */
+  border-bottom: 2px dashed rgba(240, 240, 240, 0.5); /* Dimmer dash */
+  padding-bottom: 0.8rem;
+  margin-bottom: 0; /* Gap handled by #blackboard-content */
+  color: #ffffff; /* White title */
+}
+
+/* Question Box & Text Specifics */
+#question-overlay #question-box {
+  width: 100%;
+  margin-top: 0; /* Gap handled by #blackboard-content */
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Space between question text and buttons */
+}
+
+#question-overlay #question-text {
+  font-size: clamp(1.2rem, 3.8vw, 1.5rem);
+  line-height: 1.6;
+  margin-bottom: 0; /* Gap handled by #question-box */
+}
+
+/* Answer Buttons Container */
 #question-overlay #answer-buttons {
   display: flex;
-  flex-direction: column; /* Кнопки друг под другом */
-  gap: 8px; /* Отступ между кнопками */
-  width: 100%; /* Занимают всю ширину панели */
-  align-items: stretch; /* Кнопки растягиваются по ширине */
+  flex-direction: column;
+  gap: 0.7rem; /* Adjust gap */
+  width: 100%;
+  align-items: stretch; /* Make buttons fill width */
 }
 
+/* Individual Answer Buttons (Chalk Style) */
 #question-overlay .answer-button {
-  padding: 12px 15px; /* Увеличенный паддинг */
-  font-size: clamp(1em, 3vw, 1.1em);
+  background: rgba(255, 255, 255, 0.05); /* Subtle background */
+  border: 2px solid rgba(240, 240, 240, 0.5); /* Slightly dimmer border */
+  color: #f0f0f0;
+  padding: 0.8rem 1.2rem; /* Adjust padding */
+  margin: 0;
+  font-family: 'Caveat', cursive, sans-serif;
+  font-size: clamp(1.1rem, 3.2vw, 1.3rem);
   cursor: pointer;
-  border: 1px solid #556;
-  border-radius: 2px; /* !!! ПОЧТИ КВАДРАТНЫЙ */
-  background-color: #3a3a4a; /* Фон кнопки */
-  color: #ddd; /* Цвет текста */
-  text-align: left; /* Текст слева */
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.1s;
+  text-align: left; /* Align text left */
+  line-height: 1.4;
 }
 #question-overlay .answer-button:hover {
-  background-color: #48485d; /* Цвет при наведении */
-  border-color: #778;
-}
-
-/* Панель Выбора этажа */
-#floor-selection-ui h2 {
-  margin-bottom: 15px;
-  font-size: clamp(1.3em, 4.5vw, 1.7em); /* Крупнее заголовок */
+  background-color: rgba(240, 240, 240, 0.15);
   color: #fff;
-  font-weight: 600;
+  border-color: #fff;
+}
+#question-overlay .answer-button:active {
+  transform: scale(0.98);
 }
 
+/* --- Floor Selection Panel Specifics --- */
+#floor-selection-ui {
+  /* Inherits .ui-panel styles, shown via .visible class */
+  background-color: rgba(48, 52, 60, 0.97); /* Match menu style */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+#floor-selection-ui h2 {
+  color: #ffffff;
+  font-weight: 700;
+}
 #floor-selection-ui #floor-buttons-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  width: 75%; /* Ширина контейнера кнопок */
-  max-width: 280px;
+  gap: 0.8rem;
+  width: 80%; /* Slightly wider */
+  max-width: 300px;
 }
-
 #floor-selection-ui .floor-button {
-  padding: 10px 15px;
-  font-size: clamp(1em, 3.8vw, 1.2em);
+  padding: 0.7rem 1rem;
+  font-size: clamp(1rem, 3.8vw, 1.1rem);
+  font-weight: 600;
   cursor: pointer;
-  background-color: #4a90e2; /* Синий цвет кнопок */
+  background-image: linear-gradient(to right, #1e88e5 0%, #61dafb 51%, #1e88e5 100%);
+  background-size: 200% auto;
   color: white;
   border: none;
-  border-radius: 2px; /* !!! ПОЧТИ КВАДРАТНЫЙ */
-  transition: background-color 0.2s ease, transform 0.1s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  transition: background-position 0.3s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  text-align: center;
 }
 #floor-selection-ui .floor-button:hover:not(:disabled) {
-  background-color: #357abd; /* Темнее при наведении */
+  background-position: right center; /* change the direction of the change here */
 }
 #floor-selection-ui .floor-button:active:not(:disabled) {
-  transform: scale(0.97); /* Эффект нажатия */
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+  transform: scale(0.97);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 #floor-selection-ui .floor-button:disabled,
 #floor-selection-ui .floor-button.current {
-  /* Стиль для неактивной и текущей */
-  background-color: #555;
-  color: #aaa;
+  /* Style disabled and current similarly */
+  background-image: none;
+  background-color: #5a5f6a;
+  color: #a0a0a0;
   cursor: not-allowed;
   box-shadow: none;
   opacity: 0.7;
 }
 #floor-selection-ui .floor-button.current {
-  font-weight: bold; /* Выделяем текущий */
-  border: 1px solid #888; /* Небольшая рамка для текущего */
+  font-weight: 700;
+  /* Optional: Add a subtle indicator */
+  /* border: 1px solid #888; */
 }
 
-/* --- Экранные Контролы (для мобильных) --- */
-.controls-container {
-  position: fixed; /* Фиксированное положение */
-  bottom: clamp(15px, 4vh, 30px); /* Адаптивный отступ снизу */
-  /* Позиционирование: можно слева, справа или по центру */
-  /* Слева: */
-  /* left: clamp(15px, 4vw, 30px); */
-  /* Справа: */
-  right: clamp(15px, 4vw, 30px);
-  /* По центру: */
-  /* left: 50%; transform: translateX(-50%); */
-
-  display: grid; /* Используем grid для расположения кнопок */
-  grid-template-areas: '. up .' 'left . right' '. down .'; /* Схема расположения */
-  gap: clamp(8px, 2vw, 12px); /* Адаптивный отступ между кнопками */
-  z-index: 100; /* Выше канваса */
-  opacity: 0.75; /* Небольшая прозрачность */
-  transition: opacity 0.3s ease;
-  display: none; /* Скрыты по умолчанию */
-}
-/* Можно сделать контролы менее заметными, когда не используются */
-/* .controls-container:not(:hover) { opacity: 0.5; } */
-
-.control-btn {
-  width: clamp(48px, 12vw, 60px); /* Адаптивный размер кнопок */
-  height: clamp(48px, 12vw, 60px);
-  border-radius: 4px; /* !!! ПОЧТИ КВАДРАТНЫЕ */
-  background: rgba(60, 60, 60, 0.8); /* Фон кнопок */
-  border: 1px solid rgba(255, 255, 255, 0.2); /* Легкая рамка */
-  color: white;
-  font-size: clamp(24px, 6vw, 30px); /* Размер иконки/текста */
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.1s ease, transform 0.1s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Предотвращение стандартного поведения на мобильных */
-  user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  touch-action: manipulation; /* Убирает задержку клика */
-  -webkit-tap-highlight-color: transparent; /* Убирает синее выделение при тапе */
-}
-.control-btn.active, /* Когда кнопка удерживается (логика JS) */
-.control-btn:active {
-  /* Псевдокласс CSS для нажатия */
-  background: rgba(90, 90, 90, 0.9);
-  transform: scale(0.95); /* Небольшое сжатие при нажатии */
-}
-/* Привязка к grid areas */
-.control-btn.up {
-  grid-area: up;
-}
-.control-btn.left {
-  grid-area: left;
-}
-.control-btn.right {
-  grid-area: right;
-}
-.control-btn.down {
-  grid-area: down;
-}
-
-/* --- Отображение счета --- */
-.score-display {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  padding: 6px 12px;
-  border-radius: 2px; /* !!! ПОЧТИ КВАДРАТНЫЙ */
-  font-size: clamp(14px, 3vw, 18px);
-  font-family: 'Arial', sans-serif;
-  font-weight: bold;
-  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7);
-  z-index: 100;
-  display: none; /* Скрыт по умолчанию */
-}
-#score-display #score-value {
-  color: #ffeb3b;
-} /* Желтый для текущего счета */
-#score-display #score-target {
-  color: #ccc;
-} /* Серый для цели */
-
-/* --- Всплывающие сообщения --- */
+/* --- Flash Messages --- */
 #flash-message-container {
-  position: fixed; /* Фиксированное положение */
-  top: 15px;
+  position: fixed;
+  top: 1rem; /* Closer to top */
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1100; /* Выше всего остального */
-  display: flex; /* Элементы внутри - колонкой */
+  z-index: 1100; /* Above panels */
+  display: flex;
   flex-direction: column;
-  align-items: center; /* Центрирование сообщений */
-  gap: 8px; /* Отступ между сообщениями */
-  pointer-events: none; /* Не мешают кликать под ними */
-  width: clamp(250px, 80vw, 500px); /* Адаптивная ширина контейнера */
+  align-items: center;
+  gap: 0.6rem;
+  pointer-events: none; /* Container doesn't block clicks */
+  width: clamp(280px, 80vw, 550px);
 }
 
 .flash-message {
-  padding: 10px 20px;
-  border-radius: 3px; /* !!! ПОЧТИ КВАДРАТНЫЙ */
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
   color: white;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.95rem;
   text-align: center;
-  opacity: 0; /* Анимация появления */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: auto; /* Fit content */
+  max-width: 100%;
+  pointer-events: auto; /* Individual messages can be interacted with if needed */
+
+  /* Transition properties - match the better JS implementation */
+  opacity: 0;
+  transform: translateY(-20px);
   transition: opacity 0.4s ease-out, transform 0.4s ease-out;
-  transform: translateY(-10px); /* Начинают чуть выше */
-  /* display: none; Управляется JS */
-  min-width: 200px;
-  max-width: 100%; /* Ограничение ширины сообщения */
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
-  /* pointer-events: none; /* Уже на контейнере */
 }
-/* Класс для показа сообщения */
 .flash-message.visible {
-  opacity: 0.95; /* Не полностью непрозрачные */
+  opacity: 1;
   transform: translateY(0);
 }
-
-/* Цвета сообщений */
+/* Flash Message Types (Softer colors) */
 .flash-info {
-  background-color: rgba(30, 144, 255, 0.92);
-} /* Синий */
+  background-color: rgba(60, 120, 190, 0.95);
+}
 .flash-success {
-  background-color: rgba(60, 179, 113, 0.92);
-} /* Зеленый */
+  background-color: rgba(60, 160, 100, 0.95);
+}
 .flash-error {
-  background-color: rgba(220, 20, 60, 0.92);
-} /* Красный */
+  background-color: rgba(190, 70, 80, 0.95);
+}
 .flash-warning {
-  background-color: rgba(255, 165, 0, 0.92);
-} /* Оранжевый */
-
-/* --- Сообщение о загрузке --- */
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000; /* Выше всего */
-  color: white;
-  font-size: 1.5em;
-  display: none; /* Скрыто по умолчанию */
-}
-/* Класс для показа */
-.loading-overlay.visible {
-  display: flex;
+  background-color: rgba(210, 150, 50, 0.95);
 }
 
-/* --- Адаптивность (Пример) --- */
-@media (max-width: 600px) {
-  /* Уменьшаем размеры/отступы для мобильных экранов */
-  .controls-container {
-    bottom: 10px;
-    /* Центрируем контролы на маленьких экранах */
-    left: 50%;
-    transform: translateX(-50%);
-    right: auto;
-    gap: 8px;
+/* --- Responsiveness --- */
+@media (max-width: 768px) {
+  html {
+    font-size: 15px;
+  } /* Slightly smaller base font */
+
+  .controls-container.visible {
+    /* Target visible state */
+    opacity: 0.9; /* Slightly less opaque on mobile when visible */
   }
-  .score-display {
-    top: 5px;
-    left: 5px;
-    padding: 5px 8px;
+}
+
+@media (max-width: 600px) {
+  html {
+    font-size: 14px;
+  } /* Even smaller */
+
+  .menu-container {
+    width: 95%;
   }
   .ui-panel {
-    gap: 10px; /* Меньше отступ в панелях */
+    /* Affects question and floor panels */
+    width: 95%;
+    gap: 0.8rem;
   }
+  #question-overlay {
+    padding: 1rem; /* Adjust padding */
+    border-width: 12px;
+  }
+  #question-overlay #blackboard-content {
+    gap: 0.8rem;
+  }
+  #question-overlay h2 {
+    font-size: 1.6rem;
+    padding-bottom: 0.6rem;
+  }
+  #question-overlay #question-box {
+    gap: 1.2rem;
+  }
+  #question-overlay #question-text {
+    font-size: 1.1rem;
+  }
+  #question-overlay .answer-button {
+    padding: 0.7rem 1rem;
+    font-size: 1.05rem;
+  }
+
+  .controls-container {
+    bottom: 0.8rem;
+    right: 0.8rem;
+    gap: 0.5rem;
+  }
+  .control-btn {
+    width: clamp(45px, 12vw, 55px);
+    height: clamp(45px, 12vw, 55px);
+    font-size: 1.4rem;
+  }
+  .score-display {
+    top: 0.5rem;
+    left: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  #floor-selection-ui #floor-buttons-container {
+    width: 90%;
+  }
+}
+
+/* --- Utility Classes --- */
+/* General purpose hidden class if needed elsewhere */
+.hidden {
+  display: none !important;
 }

@@ -1,6 +1,7 @@
 // src/main.js (или твой файл точки входа)
 import { Game } from './Core/Game.js'; // Уточни путь
 import { UIManager } from './UI/UIManager.js'; // Убедись, что путь и регистр верны
+import '../css/styles.css';
 
 // --- Глобальные переменные ---
 const menuContainer = document.getElementById('menu-container');
