@@ -1,76 +1,95 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ucieczka z Uniwersytetu</title>
-    <!-- Added a default title -->
-    <link rel="stylesheet" href="main.css" />
-    <!-- Webpack or build tool will inject CSS/JS links if configured -->
+    <title>Student Game</title>
   </head>
   <body>
-    <!-- Menu Container (Initially visible) -->
-    <div id="menu-container" class="menu-container">
-      <!-- Removed inline style -->
-      <h1>Ucieczka z Uniwersytetu</h1>
-      <p>Wybierz postać:</p>
-      <div id="character-selector-wrapper" class="character-selection">
-        <!-- Ensure classes match CSS -->
-        <div class="character-circle red" data-color="red"></div>
-        <div class="character-circle blue" data-color="blue"></div>
-        <div class="character-circle yellow" data-color="yellow"></div>
-        <div class="character-circle green" data-color="green"></div>
+    <div class="menu-container">
+      <!-- Welcome Section -->
+      <div class="welcome-section">
+        <h1>Welcome to Student Game</h1>
+        <div class="game-description">
+          <p>
+            Embark on an exciting adventure through the university campus! Choose your character and
+            navigate through various challenges.
+          </p>
+          <div class="controls-info">
+            <h3>How to Play:</h3>
+            <ul>
+              <li>Use arrow keys to move your character</li>
+              <li>Collect books to increase your score</li>
+              <li>Avoid obstacles and other students</li>
+              <li>Complete levels to progress through the game</li>
+            </ul>
+          </div>
+        </div>
       </div>
-      <button id="start-button" class="start-button" disabled>Rozpocznij grę</button>
-    </div>
 
-    <!-- Game Canvas (Initially Hidden via CSS is better, but inline is ok too) -->
-    <canvas id="game-canvas" style="display: none"></canvas>
+      <!-- Main Menu Buttons -->
+      <div class="main-menu-buttons">
+        <button class="menu-button settings-button"><span class="icon">⚙️</span> Settings</button>
+        <!-- The selectedCharacterDisplay will be inserted here by JS -->
+        <button class="menu-button play-button" disabled><span class="icon">▶️</span> Play</button>
+        <button class="menu-button character-button">
+          <span class="icon">👤</span> Choose Character
+        </button>
+      </div>
 
-    <!-- In-Game UI Elements (Initially Hidden via CSS) -->
-    <!-- Use classes 'visible' or 'hidden' added by JS to control visibility -->
+      <!-- Settings Panel -->
+      <div class="settings-panel ui-panel">
+        <button class="panel-close-button" aria-label="Close settings">×</button>
+        <h2>Settings</h2>
+        <div class="volume-control">
+          <label for="music-volume">Music Volume</label>
+          <input type="range" id="music-volume" min="0" max="100" value="50" />
+        </div>
+        <div class="volume-control">
+          <label for="sfx-volume">Sound Effects Volume</label>
+          <input type="range" id="sfx-volume" min="0" max="100" value="50" />
+        </div>
+      </div>
 
-    <div id="score-display" class="score-display">
-      <!-- Removed inline style -->
-      Książki: <span id="score-value">0</span> / <span id="score-target">?</span>
-    </div>
-
-    <div id="controls-container" class="controls-container">
-      <!-- JS will populate buttons based on UIManager.createControls -->
-      <!-- Static buttons removed as JS creates them -->
-    </div>
-
-    <!-- Question Overlay (Blackboard) - Initially Hidden via CSS -->
-    <div id="question-overlay" class="ui-panel">
-      <!-- Removed inline style -->
-      <!-- Structure matches JS creation -->
-      <div id="blackboard-content">
-        <h2>Pytanie</h2>
-        <div id="question-box">
-          <p id="question-text"></p>
-          <div id="answer-buttons">
-            <!-- JS adds buttons here -->
+      <!-- Character Selection Panel -->
+      <div class="character-panel ui-panel">
+        <button class="panel-close-button" aria-label="Close character selection">×</button>
+        <!-- ADDED THIS LINE -->
+        <h2>Choose Your Character</h2>
+        <div class="character-grid">
+          <div class="character-card" data-character="red">
+            <div class="character-preview">
+              <img src="images/character_red.png" alt="Red Student" />
+            </div>
+            <h3>Technik Programista</h3>
+            <p>Chyba się zna na programowaniu</p>
+          </div>
+          <div class="character-card" data-character="blue">
+            <div class="character-preview">
+              <img src="images/character_blue.png" alt="Blue Student" />
+            </div>
+            <h3>Blue Student</h3>
+            <p>Physics specialist. Strong and resilient.</p>
+          </div>
+          <div class="character-card" data-character="yellow">
+            <div class="character-preview">
+              <img src="images/character_yellow.png" alt="Yellow Student" />
+            </div>
+            <h3>Yellow Student</h3>
+            <p>Chemistry expert. Smart and resourceful.</p>
+          </div>
+          <div class="character-card" data-character="green">
+            <div class="character-preview">
+              <img src="images/character_green.png" alt="Green Student" />
+            </div>
+            <h3>Green Student</h3>
+            <p>Biology specialist. Calm and attentive.</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Floor Selection Panel - Initially Hidden via CSS -->
-    <div id="floor-selection-ui" class="ui-panel">
-      <!-- Removed inline style -->
-      <!-- Structure matches JS creation -->
-      <h2>Wybierz piętro</h2>
-      <div id="floor-buttons-container">
-        <!-- JS adds buttons here -->
-      </div>
-    </div>
-
-    <!-- Container for dynamic flash messages -->
-    <div id="flash-message-container">
-      <!-- JS adds messages here -->
-    </div>
-
-    <!-- Build tool (like Webpack) usually injects the bundle script here -->
-    <!-- <script src="bundle.js"></script> -->
+    <!-- Game Canvas -->
+    <canvas id="game-canvas" style="display: none"></canvas>
   </body>
 </html>

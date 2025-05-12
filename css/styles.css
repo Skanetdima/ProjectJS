@@ -14,13 +14,12 @@ html {
 }
 
 body {
-  /* Use min-height to allow content stretching if needed, but keep full height feel */
   min-height: 100vh;
-  overflow: hidden; /* Prevent scrollbars */
-  background-color: #282c34; /* Slightly softer dark background */
-  font-family: 'Inter', sans-serif; /* Modern font */
-  color: #e0e0e0; /* Light grey text */
-  display: flex; /* Helps center menu initially */
+  overflow: hidden;
+  background-color: #282c34;
+  font-family: 'Inter', sans-serif;
+  color: #e0e0e0;
+  display: flex;
   justify-content: center;
   align-items: center;
   line-height: 1.6;
@@ -29,12 +28,12 @@ body {
 /* --- Loading Overlay --- */
 .loading-overlay {
   position: fixed;
-  inset: 0; /* top, right, bottom, left = 0 */
+  inset: 0;
   background-color: rgba(20, 22, 26, 0.9);
-  display: none; /* Hidden by default */
+  display: none;
   justify-content: center;
   align-items: center;
-  z-index: 2000; /* Highest */
+  z-index: 2000;
   color: white;
   font-size: 1.5rem;
   font-weight: 600;
@@ -56,25 +55,24 @@ body {
   border-radius: 8px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
   text-align: center;
-  z-index: 1000; /* Below overlays, above canvas */
+  z-index: 1000;
   opacity: 1;
   transition: opacity 0.4s ease-out, transform 0.4s ease-out, visibility 0s linear 0s;
   transform: scale(1);
-  max-width: 500px; /* Slightly wider */
+  max-width: 600px; /* Slightly wider for more content */
   width: 90%;
-  display: flex; /* Default display */
+  display: flex;
   flex-direction: column;
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.1);
   visibility: visible;
 }
-/* Class to hide the menu */
 .menu-container.hidden {
   opacity: 0;
   transform: scale(0.95);
-  pointer-events: none; /* Prevent interaction when hidden */
+  pointer-events: none;
   visibility: hidden;
-  transition: opacity 0.4s ease-out, transform 0.4s ease-out, visibility 0s linear 0.4s; /* Delay visibility change */
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out, visibility 0s linear 0.4s;
 }
 
 .menu-container h1 {
@@ -85,12 +83,146 @@ body {
 }
 
 .menu-container p {
+  /* General paragraph styling in menu */
   margin-bottom: 1.8rem;
   font-size: clamp(1rem, 3vw, 1.1rem);
   color: #b0b0b0;
 }
 
-/* --- Character Selection --- */
+/* --- Welcome Section Specifics (NEW) --- */
+.welcome-section {
+  margin-bottom: 1.5rem;
+  width: 100%; /* Ensure it takes width within menu-container */
+}
+.game-description p {
+  /* From index.html */
+  margin-bottom: 1rem;
+}
+.controls-info {
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: clamp(0.8rem, 2vw, 1rem);
+  border-radius: 6px;
+  text-align: left;
+  font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 1rem;
+}
+.controls-info h3 {
+  color: #fff;
+  margin-bottom: 0.5rem;
+  font-size: 1.1em; /* Relative to .controls-info font-size */
+  font-weight: 600;
+}
+.controls-info ul {
+  list-style-position: inside;
+  padding-left: 0;
+}
+.controls-info li {
+  margin-bottom: 0.3rem;
+  color: #ccc;
+}
+
+/* --- Selected Character Display (NEW - For JS created element) --- */
+.selected-character-display {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 60px; /* Ensure it has some height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  width: 100%;
+  max-width: 350px; /* Match button group width */
+  box-sizing: border-box;
+}
+.selected-character-display img {
+  width: 40px;
+  height: 40px;
+  vertical-align: middle;
+  margin-right: 0.75rem;
+  border-radius: 50%;
+  border: 2px solid #61dafb; /* Accent color */
+  background-color: rgba(0, 0, 0, 0.2);
+}
+.selected-character-display span {
+  color: #e0e0e0;
+  font-weight: 600;
+}
+/* Style for "No character selected" text from JS */
+.selected-character-display span[style*='color:#aaa;'] {
+  font-style: italic;
+  color: #aaa !important; /* Override inline style if needed, or ensure JS sets this */
+  font-weight: normal;
+}
+
+/* --- Main Menu Buttons (NEW) --- */
+.main-menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem; /* Tighter gap */
+  width: 100%;
+  max-width: 350px; /* Constrain button width */
+  align-items: center; /* Center buttons if they don't fill width */
+}
+
+.menu-button {
+  padding: 0.8rem 1.5rem;
+  font-size: clamp(1rem, 4vw, 1.05rem); /* Slightly smaller */
+  cursor: pointer;
+  background-image: linear-gradient(to right, #4a90e2 0%, #69a7f0 51%, #4a90e2 100%);
+  background-size: 200% auto;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  transition: background-position 0.3s ease, transform 0.1s ease, opacity 0.3s, box-shadow 0.2s ease;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px; /* Less spacing */
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%; /* Make buttons take full width of .main-menu-buttons */
+  text-align: center;
+}
+
+.menu-button .icon {
+  font-size: 1.1em;
+  line-height: 1; /* Prevent icon from affecting button height too much */
+}
+
+.menu-button:disabled {
+  background-image: none;
+  background-color: #505561; /* Darker disabled */
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.menu-button:not(:disabled):hover {
+  background-position: right center;
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.menu-button:not(:disabled):active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.play-button {
+  /* Specific style for play button, can inherit from .start-button if desired */
+  background-image: linear-gradient(to right, #56ab2f 0%, #a8e063 51%, #56ab2f 100%);
+}
+.play-button:not(:disabled):hover {
+  box-shadow: 0 4px 12px rgba(86, 171, 47, 0.4);
+}
+
+/* --- Character Selection (EXISTING - for .character-circle, kept for reference) --- */
+/* This section is for the .character-circle structure, which is different from your current HTML/JS for selection. */
 .character-selection {
   display: flex;
   flex-wrap: wrap;
@@ -98,7 +230,6 @@ body {
   gap: clamp(1rem, 3vw, 1.5rem);
   margin-bottom: 2rem;
 }
-
 .character-circle {
   width: clamp(60px, 12vw, 75px);
   height: clamp(60px, 12vw, 75px);
@@ -119,7 +250,6 @@ body {
   border-color: #61dafb; /* Accent color */
   box-shadow: 0 0 18px rgba(97, 218, 251, 0.5);
 }
-/* Keep background colors */
 .character-circle.red {
   background-color: #e53935;
 }
@@ -133,8 +263,9 @@ body {
   background-color: #43a047;
 }
 
-/* --- Start Button --- */
+/* --- Start Button (Existing) --- */
 .start-button {
+  /* This is the original start button style, .play-button above has its own */
   padding: 0.8rem 2rem;
   font-size: clamp(1rem, 4vw, 1.1rem);
   cursor: pointer;
@@ -157,7 +288,7 @@ body {
   box-shadow: none;
 }
 .start-button:not(:disabled):hover {
-  background-position: right center; /* change the direction of the change here */
+  background-position: right center;
   color: #fff;
   text-decoration: none;
 }
@@ -167,9 +298,8 @@ body {
 }
 
 /* --- Game Canvas --- */
-canvas#game-canvas {
-  /* display: none; Replaced by inline style initially, JS will control */
-  background-color: #1c1e22; /* Darker canvas background */
+canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
+  background-color: #1c1e22;
   width: 100%;
   height: 100%;
   image-rendering: pixelated;
@@ -178,11 +308,11 @@ canvas#game-canvas {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 50; /* Below UI */
+  z-index: 50;
+  /* display: none; is handled by JS or inline style */
 }
 
 /* --- In-Game UI Elements --- */
-
 /* Score Display */
 .score-display {
   position: fixed;
@@ -195,14 +325,14 @@ canvas#game-canvas {
   font-size: clamp(0.9rem, 3vw, 1rem);
   font-weight: 600;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-  z-index: 100; /* Below panels/overlays */
-  display: none; /* Hidden by default */
+  z-index: 100;
+  display: none;
   opacity: 0;
   transition: opacity 0.3s ease-out;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 .score-display.visible {
-  display: block; /* Or flex/grid if needed */
+  display: block;
   opacity: 1;
 }
 #score-display #score-value {
@@ -218,23 +348,22 @@ canvas#game-canvas {
   position: fixed;
   bottom: clamp(1rem, 4vh, 2rem);
   right: clamp(1rem, 4vw, 2rem);
-  display: none; /* Hidden by default */
+  display: none;
   grid-template-areas:
     '. up .'
     'left . right'
     '. down .';
   gap: clamp(0.6rem, 2vw, 0.8rem);
-  z-index: 100; /* Below panels/overlays */
+  z-index: 100;
   opacity: 0;
   transition: opacity 0.3s ease-out;
 }
 .controls-container.visible {
   display: grid;
-  opacity: 1; /* Less transparent when visible */
+  opacity: 1;
 }
-
 .control-btn {
-  width: clamp(50px, 13vw, 65px); /* Slightly larger */
+  width: clamp(50px, 13vw, 65px);
   height: clamp(50px, 13vw, 65px);
   border-radius: 6px;
   background: rgba(50, 55, 65, 0.9);
@@ -253,59 +382,41 @@ canvas#game-canvas {
   -webkit-tap-highlight-color: transparent;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
 }
-.control-btn.active, /* Class added by JS */
+.control-btn.active,
 .control-btn:active {
-  /* Pseudo-class for mouse click */
   background: rgba(70, 75, 85, 0.95);
   transform: scale(0.95);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
-/* Grid area assignment is done via inline style in JS now, but keep classes for potential overrides */
-.control-btn.up {
-  /* grid-area: up; */
-}
-.control-btn.left {
-  /* grid-area: left; */
-}
-.control-btn.right {
-  /* grid-area: right; */
-}
-.control-btn.down {
-  /* grid-area: down; */
-}
 
 /* --- UI Panels (General & Specific) --- */
-
-/* Base Panel Style */
 .ui-panel {
   position: fixed;
   top: 50%;
   left: 50%;
   color: #e0e0e0;
   padding: clamp(1.5rem, 4vw, 2rem);
-  z-index: 1050; /* High z-index for panels */
-  width: clamp(320px, 85vw, 600px); /* Responsive width */
+  z-index: 1050;
+  width: clamp(320px, 85vw, 600px);
   max-width: 90%;
-  display: flex; /* Changed from none to flex for default layout */
+  display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  border-radius: 8px; /* Consistent radius */
+  border-radius: 8px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
-
-  /* Default hidden state for transitions */
   opacity: 0;
-  visibility: hidden; /* Use visibility for accessibility and preventing interaction */
-  transform: translate(-50%, -45%) scale(0.98); /* Start slightly up and smaller */
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out, visibility 0s linear 0.3s; /* Delay visibility change */
+  visibility: hidden;
+  transform: translate(-50%, -45%) scale(0.98);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out, visibility 0s linear 0.3s;
+  background-color: rgba(48, 52, 60, 0.97); /* Default panel background */
 }
-/* Class added by JS to show panels */
 .ui-panel.visible {
   opacity: 1;
-  visibility: visible; /* Show */
-  transform: translate(-50%, -50%) scale(1); /* Animate in */
-  transition-delay: 0s; /* Remove delay for visibility when becoming visible */
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+  transition-delay: 0s;
 }
 .ui-panel h2 {
   margin-top: 0;
@@ -314,93 +425,216 @@ canvas#game-canvas {
   color: #ffffff;
   font-weight: 700;
   text-align: center;
+  width: calc(100% - 40px); /* Ensure h2 doesn't overlap with absolute close button */
+  margin-left: auto; /* Center h2 when close button takes space */
+  margin-right: auto;
 }
 
-/* =================================== */
-/* Blackboard Styling Override         */
-/* =================================== */
+/* ADDED: Styling for panel close button */
+.ui-panel .panel-close-button {
+  position: absolute;
+  top: clamp(0.5rem, 2vw, 0.8rem); /* Adjust based on panel padding */
+  right: clamp(0.8rem, 2.5vw, 1rem); /* Adjust based on panel padding */
+  background: transparent;
+  border: none;
+  color: #cccccc; /* Lighter than main text for subtlety */
+  font-size: clamp(1.8rem, 5vw, 2.2rem); /* Make it easily clickable */
+  font-weight: bold;
+  line-height: 1; /* Ensure tight fit */
+  padding: 0.2rem 0.4rem; /* Small padding for easier hover/click target */
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
+  z-index: 10; /* Ensure it's above other panel content if necessary */
+}
+.ui-panel .panel-close-button:hover {
+  color: #ffffff; /* Brighter on hover */
+  transform: scale(1.1);
+}
+.ui-panel .panel-close-button:active {
+  transform: scale(1);
+}
+
+/* --- Settings Panel Specifics (NEW - uses .ui-panel) --- */
+/* .settings-panel is now a .ui-panel, specific content styling: */
+.volume-control {
+  display: flex;
+  flex-direction: column; /* Stack label and range */
+  align-items: stretch; /* Make input take full width */
+  width: 100%;
+  max-width: 350px;
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+}
+.volume-control label {
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
+  color: #ccc;
+  text-align: left; /* Align label text to left */
+}
+.volume-control input[type='range'] {
+  width: 100%;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  background: #4a4f5a; /* Slightly darker track */
+  border-radius: 5px;
+  outline: none;
+  transition: background 0.2s ease;
+}
+.volume-control input[type='range']:hover {
+  background: #5a5f6a;
+}
+.volume-control input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #61dafb; /* Accent color */
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #282c34; /* Border to match body bg, gives depth */
+  box-shadow: 0 0 5px rgba(97, 218, 251, 0.5);
+}
+.volume-control input[type='range']::-moz-range-thumb {
+  width: 18px; /* Moz often needs slight adjustment */
+  height: 18px;
+  background: #61dafb;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #282c34;
+  box-shadow: 0 0 5px rgba(97, 218, 251, 0.5);
+}
+
+/* --- Character Panel Specifics (NEW - uses .ui-panel) --- */
+/* .character-panel is now a .ui-panel, specific content styling: */
+.character-grid {
+  display: grid;
+  /* grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); */
+  grid-template-columns: repeat(2, 1fr); /* Fixed 2 columns for typical modal width */
+  gap: clamp(1rem, 2vw, 1.2rem);
+  width: 100%;
+  padding: 0.5rem 0; /* Reduced padding */
+}
+
+.character-card {
+  background-color: rgba(255, 255, 255, 0.03); /* Very subtle bg */
+  border: 2px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+  border-radius: 8px;
+  padding: clamp(0.8rem, 2vw, 1rem);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease,
+    background-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.character-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: rgba(97, 218, 251, 0.7); /* Brighter accent on hover */
+  background-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 15px rgba(97, 218, 251, 0.15);
+}
+.character-card.selected {
+  border-color: #61dafb; /* Strong accent for selected */
+  background-color: rgba(97, 218, 251, 0.1); /* Tint with accent */
+  box-shadow: 0 0 12px rgba(97, 218, 251, 0.3);
+  transform: scale(1.03);
+}
+.character-card .character-preview {
+  width: clamp(60px, 15vw, 80px);
+  height: clamp(60px, 15vw, 80px);
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.2); /* Placeholder */
+  border: 2px solid transparent; /* For consistency */
+}
+.character-card.selected .character-preview {
+  border-color: #61dafb;
+}
+.character-card .character-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.character-card h3 {
+  font-size: clamp(1rem, 3vw, 1.1rem);
+  color: #f0f0f0; /* Brighter than default p */
+  margin: 0.3rem 0 0.2rem 0;
+  font-weight: 600;
+}
+.character-card p {
+  font-size: clamp(0.8rem, 2vw, 0.85rem);
+  color: #a0a0a0; /* Dimmer description text */
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* Existing Blackboard Styling - Make sure it uses ui-panel base */
 #question-overlay {
-  /* Inherits .ui-panel positioning, width, display, transitions, etc. */
-  /* The .visible class will control its appearance */
-
-  /* --- Blackboard Appearance --- */
-  background-color: #2a3f2a; /* Dark green */
-  border: 18px solid #8b4513; /* Wood border */
-  border-radius: 5px; /* Blackboard radius */
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6); /* Overrides base panel shadow */
-  padding: clamp(1.5rem, 4vw, 2rem); /* Can adjust padding if needed */
-
-  /* --- Text Defaults (Override base panel if needed) --- */
-  color: #f0f0f0; /* Default text color inside blackboard */
-  /* Keep default font for non-chalk elements unless needed */
+  /* Inherits .ui-panel styles, .visible class controls appearance */
+  background-color: #2a3f2a;
+  border: 18px solid #8b4513;
+  border-radius: 5px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+  /* padding is from .ui-panel or can be overridden here */
+  color: #f0f0f0;
 }
-
-/* Inner content wrapper */
+/* Inner content wrapper for blackboard */
 #blackboard-content {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem; /* Add gap between title, question box */
+  gap: 1rem;
 }
-
-/* Chalk Text Styling */
 #question-overlay h2,
 #question-overlay #question-text {
-  color: #f5f5f5; /* Brighter chalk */
-  font-family: 'Caveat', cursive, sans-serif; /* Chalky font */
-  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3); /* Softer shadow */
+  color: #f5f5f5;
+  font-family: 'Caveat', cursive, sans-serif;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
   text-align: center;
-  margin: 0; /* Reset margin for these elements */
-  width: 100%; /* Ensure they take full width */
+  margin: 0;
+  width: 100%;
 }
-
-/* Title Specifics */
 #question-overlay h2 {
-  font-size: clamp(1.8rem, 5vw, 2.2rem); /* Larger title */
-  border-bottom: 2px dashed rgba(240, 240, 240, 0.5); /* Dimmer dash */
+  /* Title Specifics */
+  font-size: clamp(1.8rem, 5vw, 2.2rem);
+  border-bottom: 2px dashed rgba(240, 240, 240, 0.5);
   padding-bottom: 0.8rem;
-  margin-bottom: 0; /* Gap handled by #blackboard-content */
-  color: #ffffff; /* White title */
+  color: #ffffff;
 }
-
-/* Question Box & Text Specifics */
 #question-overlay #question-box {
   width: 100%;
-  margin-top: 0; /* Gap handled by #blackboard-content */
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* Space between question text and buttons */
+  gap: 1.5rem;
 }
-
 #question-overlay #question-text {
   font-size: clamp(1.2rem, 3.8vw, 1.5rem);
   line-height: 1.6;
-  margin-bottom: 0; /* Gap handled by #question-box */
 }
-
-/* Answer Buttons Container */
 #question-overlay #answer-buttons {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem; /* Adjust gap */
+  gap: 0.7rem;
   width: 100%;
-  align-items: stretch; /* Make buttons fill width */
+  align-items: stretch;
 }
-
-/* Individual Answer Buttons (Chalk Style) */
 #question-overlay .answer-button {
-  background: rgba(255, 255, 255, 0.05); /* Subtle background */
-  border: 2px solid rgba(240, 240, 240, 0.5); /* Slightly dimmer border */
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(240, 240, 240, 0.5);
   color: #f0f0f0;
-  padding: 0.8rem 1.2rem; /* Adjust padding */
+  padding: 0.8rem 1.2rem;
   margin: 0;
   font-family: 'Caveat', cursive, sans-serif;
   font-size: clamp(1.1rem, 3.2vw, 1.3rem);
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.1s;
-  text-align: left; /* Align text left */
+  text-align: left;
   line-height: 1.4;
 }
 #question-overlay .answer-button:hover {
@@ -414,21 +648,17 @@ canvas#game-canvas {
 
 /* --- Floor Selection Panel Specifics --- */
 #floor-selection-ui {
-  /* Inherits .ui-panel styles, shown via .visible class */
-  background-color: rgba(48, 52, 60, 0.97); /* Match menu style */
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  /* .ui-panel provides base, these are overrides/additions */
+  /* background-color is already rgba(48, 52, 60, 0.97) from .ui-panel */
 }
 #floor-selection-ui h2 {
-  color: #ffffff;
-  font-weight: 700;
+  color: #ffffff; /* Already white from .ui-panel h2 */
 }
 #floor-selection-ui #floor-buttons-container {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
-  width: 80%; /* Slightly wider */
+  width: 80%;
   max-width: 300px;
 }
 #floor-selection-ui .floor-button {
@@ -446,7 +676,7 @@ canvas#game-canvas {
   text-align: center;
 }
 #floor-selection-ui .floor-button:hover:not(:disabled) {
-  background-position: right center; /* change the direction of the change here */
+  background-position: right center;
 }
 #floor-selection-ui .floor-button:active:not(:disabled) {
   transform: scale(0.97);
@@ -454,7 +684,6 @@ canvas#game-canvas {
 }
 #floor-selection-ui .floor-button:disabled,
 #floor-selection-ui .floor-button.current {
-  /* Style disabled and current similarly */
   background-image: none;
   background-color: #5a5f6a;
   color: #a0a0a0;
@@ -464,25 +693,22 @@ canvas#game-canvas {
 }
 #floor-selection-ui .floor-button.current {
   font-weight: 700;
-  /* Optional: Add a subtle indicator */
-  /* border: 1px solid #888; */
 }
 
 /* --- Flash Messages --- */
 #flash-message-container {
   position: fixed;
-  top: 1rem; /* Closer to top */
+  top: 1rem;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1100; /* Above panels */
+  z-index: 1100;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.6rem;
-  pointer-events: none; /* Container doesn't block clicks */
+  pointer-events: none;
   width: clamp(280px, 80vw, 550px);
 }
-
 .flash-message {
   padding: 0.8rem 1.5rem;
   border-radius: 6px;
@@ -492,11 +718,9 @@ canvas#game-canvas {
   text-align: center;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  width: auto; /* Fit content */
+  width: auto;
   max-width: 100%;
-  pointer-events: auto; /* Individual messages can be interacted with if needed */
-
-  /* Transition properties - match the better JS implementation */
+  pointer-events: auto;
   opacity: 0;
   transform: translateY(-20px);
   transition: opacity 0.4s ease-out, transform 0.4s ease-out;
@@ -505,7 +729,6 @@ canvas#game-canvas {
   opacity: 1;
   transform: translateY(0);
 }
-/* Flash Message Types (Softer colors) */
 .flash-info {
   background-color: rgba(60, 120, 190, 0.95);
 }
@@ -523,29 +746,42 @@ canvas#game-canvas {
 @media (max-width: 768px) {
   html {
     font-size: 15px;
-  } /* Slightly smaller base font */
-
+  }
   .controls-container.visible {
-    /* Target visible state */
-    opacity: 0.9; /* Slightly less opaque on mobile when visible */
+    opacity: 0.9;
+  }
+  .character-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* More responsive on tablet */
   }
 }
 
 @media (max-width: 600px) {
   html {
     font-size: 14px;
-  } /* Even smaller */
-
+  }
   .menu-container {
     width: 95%;
+    padding: 1.2rem;
   }
   .ui-panel {
-    /* Affects question and floor panels */
     width: 95%;
     gap: 0.8rem;
+    padding: 1.2rem;
   }
+
+  /* Adjust panel h2 to make space for close button on smaller screens */
+  .ui-panel h2 {
+    padding-right: 30px; /* Ensure space for close button if it's next to title */
+    /* Or rely on absolute positioning and panel padding */
+  }
+  .ui-panel .panel-close-button {
+    font-size: clamp(1.6rem, 4.5vw, 2rem);
+    top: clamp(0.4rem, 1.5vw, 0.6rem);
+    right: clamp(0.6rem, 2vw, 0.8rem);
+  }
+
   #question-overlay {
-    padding: 1rem; /* Adjust padding */
+    padding: 1rem;
     border-width: 12px;
   }
   #question-overlay #blackboard-content {
@@ -585,10 +821,93 @@ canvas#game-canvas {
   #floor-selection-ui #floor-buttons-container {
     width: 90%;
   }
+
+  .character-grid {
+    grid-template-columns: 1fr; /* Single column on very small screens */
+    gap: 0.8rem;
+  }
+  .character-card {
+    padding: 0.8rem;
+  }
+  .character-card h3 {
+    font-size: 1rem;
+  }
+  .character-card p {
+    font-size: 0.8rem;
+  }
+
+  .main-menu-buttons {
+    max-width: 100%;
+  } /* Allow buttons to fill more space */
+  .menu-button {
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+  }
 }
 
 /* --- Utility Classes --- */
-/* General purpose hidden class if needed elsewhere */
 .hidden {
   display: none !important;
+}
+
+/* Character modal overlay styling (JS creates this with inline styles, but can be defined here too) */
+.character-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.65); /* Slightly darker */
+  z-index: 1040; /* Below ui-panel (1050), but above other elements */
+  opacity: 0; /* Start hidden for transition */
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+.character-modal-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* Ensure this style (or similar) is present from the previous fix */
+.ui-panel .panel-close-button {
+  position: absolute;
+  top: clamp(0.5rem, 2vw, 0.8rem);
+  right: clamp(0.8rem, 2.5vw, 1rem);
+  background: transparent;
+  border: none;
+  color: #cccccc;
+  font-size: clamp(1.8rem, 5vw, 2.2rem);
+  font-weight: bold;
+  line-height: 1;
+  padding: 0.2rem 0.4rem;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
+  z-index: 10; /* Ensure it's above other panel content */
+}
+.ui-panel .panel-close-button:hover {
+  color: #ffffff;
+  transform: scale(1.1);
+}
+.ui-panel .panel-close-button:active {
+  transform: scale(1);
+}
+
+/* Also ensure .character-modal-overlay styles are correct for visibility toggling */
+.character-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 1040; /* Below ui-panel (1050) */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+.character-modal-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
 }
