@@ -1,8 +1,7 @@
 // src/map/ProceduralMap.js
-
 import { Book } from './Book.js';
 import { MapRenderer } from './MapRenderer.js';
-import { randomInt } from '../utils/map.js'; // Upewnij się, że map.js eksportuje randomInt
+import { randomInt } from '../utils/map.js'; // Убедитесь, что этот файл и функция существуют
 import { generateLevelData } from './MapGen.js';
 import {
   TILE_WALL,
@@ -10,10 +9,10 @@ import {
   TILE_ROOM_FLOOR,
   TILE_LIFT,
   LIFT_INTERACTION_RADIUS_MULTIPLIER,
-  GYM_CHANCE_ON_FIRST_FLOOR, // Zachowaj dla domyślnych parametrów generowania, jeśli potrzebne
+  // GYM_CHANCE_ON_FIRST_FLOOR, // Если используется в MapGen.js
 } from '../utils/constants.js';
 
-// Uwaga: consistentLiftCoords jest teraz zarządzane wewnętrznie przez mapGenerator.js
+const DEBUG_FLOOR = 3; // Установите на номер этажа для отладки или null/0 для отключения
 
 export class ProceduralMap {
   constructor(canvasWidth, canvasHeight, floorNumber, minFloor, maxFloor) {
@@ -29,173 +28,156 @@ export class ProceduralMap {
     this.minFloor = minFloor;
     this.maxFloor = maxFloor;
 
-    // Stan mapy - inicjalizowany po wygenerowaniu
     this.map = null;
     this.rooms = [];
     this.books = [];
-    this.liftPosition = null; // Pozycja windy {x, y, tileX, tileY}
+    this.liftPosition = null; // {x, y, tileX, tileY}
 
-    // Moduły
     this.renderer = new MapRenderer(this.tileSize);
 
-    // --- Generowanie ---
-    // Zdefiniuj parametry generowania tutaj lub przekaż je
     const generationParams = {
       minRoomSize: 5,
       maxRoomSize: 10,
       corridorThickness: 1,
       numRooms: 12,
       maxRoomAttempts: 200,
-      booksPerMap: 5, // Książki umieszczane *po* wygenerowaniu
+      booksPerMap: 5, // Количество книг на карту
       roomTypeWeights: {
-        // Wagi typów pomieszczeń
+        // Веса для типов комнат
         classroom: 50,
         office: 25,
         library: 15,
-        lab: 10, // ! NOWY TYP: Laboratorium
-        storage: 5, // ! NOWY TYP: Magazyn
-        // szansa na siłownię (gym) jest obsługiwana przez generator na podstawie floorNumber
-        utility: 10, // Pomieszczenie gospodarcze
+        lab: 10,
+        storage: 5,
+        utility: 10,
       },
     };
 
     try {
-      // Konfiguracja dla generatora
       const generationConfig = {
         cols: this.cols,
         rows: this.rows,
         floorNumber: this.floorNumber,
         minFloor: this.minFloor,
-        maxFloor: this.maxFloor, // Przekaż też maxFloor, może być przydatne później
-        tileSize: this.tileSize, // Przekaż tileSize, jeśli generator go potrzebuje (np. do pozycji windy w świecie)
+        maxFloor: this.maxFloor,
+        tileSize: this.tileSize,
         generationParams: generationParams,
       };
 
-      // Generuj dane układu mapy
       const { map, rooms, liftPosition } = generateLevelData(generationConfig);
 
-      // Zapisz wygenerowane dane
       this.map = map;
       this.rooms = rooms;
-      this.liftPosition = liftPosition; // Zawiera już współrzędne świata, jeśli obliczone przez generator
+      this.liftPosition = liftPosition; // Содержит {x, y, tileX, tileY}
 
-      // --- Kroki po generacji ---
-      this.renderer.resetColorCache(); // Zresetuj cache renderera dla nowej mapy
-      this.placeBooksReliably(generationParams.booksPerMap); // Umieść książki na wygenerowanej mapie
+      this.renderer.resetColorCache();
+      this.placeBooksReliably(generationParams.booksPerMap);
 
-      console.log(
-        `[ProcMap Piętro ${this.floorNumber}] Inicjalizacja zakończona. ${
-          this.rooms.length
-        } pokoi, Winda: ${
-          this.liftPosition
-            ? `OK w (${this.liftPosition.tileX}, ${this.liftPosition.tileY})`
-            : 'BŁĄD'
-        }, ${this.books.length} książek.`
-      );
-      // this.logMapGrid(); // Opcjonalnie: Zaloguj siatkę po wszystkim
+      if (this.floorNumber === DEBUG_FLOOR) {
+        console.log(
+          `[ProcMap F${this.floorNumber}] Init complete. Lift at tile (${liftPosition?.tileX}, ${liftPosition?.tileY}).`
+        );
+        // this.logMapGrid(); // Можно раскомментировать для вывода сетки сразу после генерации
+      }
     } catch (error) {
       console.error(
-        `[ProcMap Piętro ${this.floorNumber}] BŁĄD KRYTYCZNY podczas generowania mapy lub konfiguracji:`,
+        `[ProcMap F${this.floorNumber}] CRITICAL ERROR during map generation or setup:`,
         error
       );
-      // Obsłuż błąd odpowiednio - może rzuć go dalej lub ustaw stan 'failed'
-      throw error; // Rzuć ponownie, aby zasygnalizować błąd wywołującemu (np. Game)
+      throw error; // Перебрасываем ошибку, чтобы Game.js мог ее обработать
     }
   }
 
-  // --- Umieszczanie książek (Przeniesione tutaj, działa na wygenerowanej mapie) ---
   placeBooksReliably(booksPerMap) {
-    this.books = []; // Wyczyść poprzednie książki
+    this.books = []; // Очищаем предыдущие книги
     const potentialLocations = [];
     const placedCoords = new Set();
-    console.log(`[ProcMap Piętro ${this.floorNumber}] Umieszczanie do ${booksPerMap} książek...`);
+    // console.log(`[ProcMap F${this.floorNumber}] Placing up to ${booksPerMap} books...`);
 
-    // Znajdź prawidłowe miejsca (korytarz lub podłoga pokoju, nie winda)
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         const tileValue = this.map[r]?.[c];
         const isLiftTile =
           this.liftPosition && r === this.liftPosition.tileY && c === this.liftPosition.tileX;
-        // Sprawdzamy CZY JEST to korytarz LUB podłoga pokoju ORAZ CZY NIE JEST to winda
+        // Книги можно размещать в коридорах или на полу комнат, но не на клетке лифта
         if ((tileValue === TILE_CORRIDOR || tileValue === TILE_ROOM_FLOOR) && !isLiftTile) {
           potentialLocations.push({ r, c });
         }
       }
     }
 
-    // Umieść książki losowo z potencjalnych lokalizacji
     let booksPlaced = 0;
     while (booksPlaced < booksPerMap && potentialLocations.length > 0) {
       const randomIndex = Math.floor(Math.random() * potentialLocations.length);
-      const { r, c } = potentialLocations.splice(randomIndex, 1)[0]; // Usuń wybraną lokalizację
+      const { r, c } = potentialLocations.splice(randomIndex, 1)[0]; // Удаляем выбранную локацию
       const coordKey = `${c},${r}`;
 
-      // Podwójnie sprawdź kafelek na wszelki wypadek i upewnij się, że nie został już umieszczony (choć splice powinien temu zapobiec)
       if (
         (this.map[r]?.[c] === TILE_CORRIDOR || this.map[r]?.[c] === TILE_ROOM_FLOOR) &&
         !placedCoords.has(coordKey)
       ) {
         const bookWorldX = (c + 0.5) * this.tileSize;
         const bookWorldY = (r + 0.5) * this.tileSize;
-        const bookId = `book_${this.floorNumber}_${booksPlaced + 1}`; // Unikalne ID na piętro/książkę
+        const bookId = `book_f${this.floorNumber}_${booksPlaced + 1}`; // Уникальный ID
         this.books.push(new Book(bookWorldX, bookWorldY, bookId, this.tileSize));
         placedCoords.add(coordKey);
         booksPlaced++;
       }
     }
-
-    if (booksPlaced < booksPerMap) {
-      console.warn(`[ProcMap Książki] Umieszczono tylko ${booksPlaced}/${booksPerMap} książek.`);
-    } else {
-      console.log(`[ProcMap Książki] Umieszczono ${booksPlaced} książek.`);
-    }
+    // if (booksPlaced < booksPerMap) console.warn(`[ProcMap F${this.floorNumber}] Placed only ${booksPlaced}/${booksPerMap} books.`);
   }
 
-  // --- Metody interakcji ---
-
   isWalkable(worldX, worldY) {
-    if (!this.map) return false; // Mapa nie wygenerowana
+    if (!this.map) return false;
     const tileX = Math.floor(worldX / this.tileSize);
     const tileY = Math.floor(worldY / this.tileSize);
 
     if (tileX < 0 || tileX >= this.cols || tileY < 0 || tileY >= this.rows) {
-      return false; // Poza granicami mapy
+      return false; // За пределами карты
     }
 
     const tileValue = this.map[tileY]?.[tileX];
-    // Sprawdź typy przechodnich kafelków - WINDA JEST PRZECHODNIA (dla kolizji, niekoniecznie do stania)
+    // Лифт считается проходимым для проверки столкновений (персонаж может на него зайти)
     return tileValue === TILE_CORRIDOR || tileValue === TILE_ROOM_FLOOR || tileValue === TILE_LIFT;
   }
 
   findRandomInitialSpawnPosition() {
     if (!this.map) return undefined;
     const suitableTiles = [];
-    // Preferuj kafelki nie sąsiadujące bezpośrednio ze ścianami dla mniej ciasnego startu
+    // Сначала ищем более "открытые" места
     for (let r = 1; r < this.rows - 1; r++) {
+      // Избегаем краев для первой попытки
       for (let c = 1; c < this.cols - 1; c++) {
         const tileValue = this.map[r]?.[c];
         const isLift =
           this.liftPosition && r === this.liftPosition.tileY && c === this.liftPosition.tileX;
-        // Szukamy korytarza lub podłogi pokoju, ALE NIE WINDY
         if ((tileValue === TILE_CORRIDOR || tileValue === TILE_ROOM_FLOOR) && !isLift) {
-          // Sprawdź, czy jest otoczony przez nie-ściany (więcej otwartej przestrzeni)
-          if (
-            this.map[r - 1]?.[c] !== TILE_WALL &&
-            this.map[r + 1]?.[c] !== TILE_WALL &&
-            this.map[r]?.[c - 1] !== TILE_WALL &&
-            this.map[r]?.[c + 1] !== TILE_WALL
-          ) {
+          if (this.isTileOpenEnough(c, r, 3, true)) {
+            // Требуем 3 открытых стороны, избегаем узких проходов
             suitableTiles.push({ r, c });
           }
         }
       }
     }
-
-    // Wycofanie: Jeśli nie znaleziono otwartych przestrzeni, użyj dowolnego prawidłowego kafelka podłogi/korytarza (nadal nie windy)
+    // Если не нашли идеальных, ищем с 2 открытыми сторонами
     if (suitableTiles.length === 0) {
-      console.warn(
-        "[MapGen Spawn] Nie znaleziono 'otwartych' punktów startowych, używam dowolnego przechodniego kafelka nie będącego windą."
-      );
+      for (let r = 0; r < this.rows; r++) {
+        for (let c = 0; c < this.cols; c++) {
+          const tileValue = this.map[r]?.[c];
+          const isLift =
+            this.liftPosition && r === this.liftPosition.tileY && c === this.liftPosition.tileX;
+          if ((tileValue === TILE_CORRIDOR || tileValue === TILE_ROOM_FLOOR) && !isLift) {
+            if (this.isTileOpenEnough(c, r, 2, true)) {
+              // 2 открытых стороны, избегаем узких проходов
+              suitableTiles.push({ r, c });
+            }
+          }
+        }
+      }
+    }
+    // Крайний случай: любая проходимая не лифтовая клетка
+    if (suitableTiles.length === 0) {
+      // console.warn(`[ProcMap F${this.floorNumber} RandomSpawn] No ideal spots. Using any valid non-lift floor/corridor.`);
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
           const tileValue = this.map[r]?.[c];
@@ -210,87 +192,156 @@ export class ProceduralMap {
 
     if (suitableTiles.length === 0) {
       console.error(
-        `[MapGen Spawn] KRYTYCZNY: Nie znaleziono odpowiednich kafelków startowych (podłoga/korytarz niebędący windą)!`
+        `[ProcMap F${this.floorNumber} RandomSpawn] CRITICAL: No suitable spawn tiles found!`
       );
-      return undefined; // Zasygnalizuj błąd
+      return undefined;
     }
 
     const { r, c } = suitableTiles[Math.floor(Math.random() * suitableTiles.length)];
-    const worldX = (c + 0.5) * this.tileSize;
-    const worldY = (r + 0.5) * this.tileSize;
-    console.log(`[MapGen Spawn] Znaleziono początkowy spawn na kratce(${c}, ${r})`);
-    return { x: worldX, y: worldY };
+    return { x: (c + 0.5) * this.tileSize, y: (r + 0.5) * this.tileSize };
   }
 
-  /**
-   * Znajduje najbliższą BEZPIECZNĄ przechodnią kratkę (KORYTARZ lub PODŁOGA_POKOJU)
-   * do docelowej pozycji w świecie.
-   * Używa wyszukiwania w rozszerzającym się promieniu, a jako fallback BFS.
-   * @param {number} targetWorldX Docelowa współrzędna X w świecie.
-   * @param {number} targetWorldY Docelowa współrzędna Y w świecie.
-   * @param {number} [maxRadius=8] Maksymalny promień początkowego wyszukiwania.
-   * @param {boolean} [excludeLift=false] Jeśli true, WYNIK nie może być kratką windy.
-   * @returns {{x: number, y: number} | null} Współrzędne środka znalezionej kratki w świecie lub null.
-   */
-  findNearestWalkableTile(targetWorldX, targetWorldY, maxRadius = 8, excludeLift = false) {
-    if (!this.map) return null;
+  isTileOpenEnough(tileX, tileY, minOpenSides = 2, avoidOneTileWidePassages = false) {
+    const isDebugCurrentCall = this.floorNumber === DEBUG_FLOOR; // Логируем только для отладочного этажа
+    // if (isDebugCurrentCall) console.log(`[ProcMap F${this.floorNumber} isTileOpenEnough] Checking (${tileX},${tileY}) with minOpenSides=${minOpenSides}, avoidNarrow=${avoidOneTileWidePassages}`);
 
-    const targetTileX = Math.floor(targetWorldX / this.tileSize);
-    const targetTileY = Math.floor(targetWorldY / this.tileSize);
+    if (!this.map) return false;
+    let openSidesCount = 0;
+    // dx, dy, label
+    const directions = [
+      [0, -1, 'N'],
+      [0, 1, 'S'],
+      [-1, 0, 'W'],
+      [1, 0, 'E'],
+    ];
+    const isOpenSide = [false, false, false, false]; // N, S, W, E
+    // let neighborDebug = {}; // Раскомментируйте для детального лога соседей
 
-    console.log(
-      `[MapUtil] Szukanie najbliższej BEZPIECZNEJ kratki (excludeLift=${excludeLift}) blisko świata(${targetWorldX.toFixed(
-        1
-      )}, ${targetWorldY.toFixed(1)}) -> kratka(${targetTileX}, ${targetTileY})`
-    );
+    for (let i = 0; i < directions.length; i++) {
+      const [dx, dy, dirLabel] = directions[i];
+      const neighborX = tileX + dx;
+      const neighborY = tileY + dy;
+      let neighborTileValue = TILE_WALL; // По умолчанию стена, если за пределами
 
-    const targetSafeTiles = [TILE_CORRIDOR, TILE_ROOM_FLOOR]; // Cel: Korytarz lub podłoga pokoju
-    if (!excludeLift) {
-      // Jeśli nie wykluczamy windy, to ona też jest potencjalnym celem
-      // targetSafeTiles.push(TILE_LIFT); // --> Zdecydowaliśmy, że ZAWSZE szukamy korytarza/pokoju
+      if (neighborX >= 0 && neighborX < this.cols && neighborY >= 0 && neighborY < this.rows) {
+        neighborTileValue = this.map[neighborY]?.[neighborX];
+        if (
+          neighborTileValue === TILE_CORRIDOR ||
+          neighborTileValue === TILE_ROOM_FLOOR ||
+          neighborTileValue === TILE_LIFT
+        ) {
+          openSidesCount++;
+          isOpenSide[i] = true;
+        }
+      }
+      // if (isDebugCurrentCall) neighborDebug[dirLabel] = `(${neighborX},${neighborY}) Type:${neighborTileValue} (Open:${isOpenSide[i]})`;
     }
 
-    // 1. Sprawdzenie SAMEJ kratki docelowej (jeśli jest bezpieczna)
-    const startTileValue = this.map[targetTileY]?.[targetTileX];
-    if (targetSafeTiles.includes(startTileValue)) {
-      // Sprawdź tylko, czy to nie jest winda, jeśli excludeLift=true
-      if (!excludeLift || startTileValue !== TILE_LIFT) {
-        console.log(
-          `  [MapUtil] Kratka docelowa (${targetTileX}, ${targetTileY}) jest już bezpieczna.`
-        );
-        return { x: (targetTileX + 0.5) * this.tileSize, y: (targetTileY + 0.5) * this.tileSize };
+    // if (isDebugCurrentCall) console.log(`  [isTileOpenEnough] Neighbors for (${tileX},${tileY}): ${JSON.stringify(neighborDebug)} -> openSidesCount: ${openSidesCount}`);
+
+    if (openSidesCount < minOpenSides) {
+      // if (isDebugCurrentCall) console.log(`  [isTileOpenEnough] RESULT for (${tileX},${tileY}): false (openSidesCount ${openSidesCount} < minOpenSides ${minOpenSides})`);
+      return false;
+    }
+
+    if (avoidOneTileWidePassages && openSidesCount === 2) {
+      // Проверка на проход шириной в 1 клетку (открыты только противоположные стороны)
+      if (isOpenSide[0] && isOpenSide[1] && !isOpenSide[2] && !isOpenSide[3]) {
+        // Север и Юг открыты, Запад и Восток закрыты
+        // if (isDebugCurrentCall) console.log(`  [isTileOpenEnough] RESULT for (${tileX},${tileY}): false (vertical 1-tile passage)`);
+        return false;
+      }
+      if (isOpenSide[2] && isOpenSide[3] && !isOpenSide[0] && !isOpenSide[1]) {
+        // Запад и Восток открыты, Север и Юг закрыты
+        // if (isDebugCurrentCall) console.log(`  [isTileOpenEnough] RESULT for (${tileX},${tileY}): false (horizontal 1-tile passage)`);
+        return false;
+      }
+    }
+    // if (isDebugCurrentCall) console.log(`  [isTileOpenEnough] RESULT for (${tileX},${tileY}): true`);
+    return true;
+  }
+
+  findNearestWalkableTile(
+    targetWorldX,
+    targetWorldY,
+    maxRadius = 8,
+    excludeLift = false,
+    avoidOneTileWidePassages = false
+  ) {
+    const isDebugCurrentCall = this.floorNumber === DEBUG_FLOOR;
+    // if (isDebugCurrentCall) console.log(`[ProcMap F${this.floorNumber} findNearestWalkableTile] TargetWorld:(${targetWorldX.toFixed(1)},${targetWorldY.toFixed(1)}), maxR:${maxRadius}, excludeLift:${excludeLift}, avoidNarrow:${avoidOneTileWidePassages}`);
+
+    if (!this.map) return null;
+    const targetTileX = Math.floor(targetWorldX / this.tileSize);
+    const targetTileY = Math.floor(targetWorldY / this.tileSize);
+    // if (isDebugCurrentCall) console.log(`  [findNearest] TargetTile: (${targetTileX},${targetTileY})`);
+
+    const targetSafeTiles = [TILE_CORRIDOR, TILE_ROOM_FLOOR]; // Куда хотим попасть
+
+    // 1. Проверяем саму целевую клетку
+    if (
+      targetTileX >= 0 &&
+      targetTileX < this.cols &&
+      targetTileY >= 0 &&
+      targetTileY < this.rows
+    ) {
+      const startTileValue = this.map[targetTileY][targetTileX];
+      if (
+        targetSafeTiles.includes(startTileValue) &&
+        (!excludeLift || startTileValue !== TILE_LIFT)
+      ) {
+        // Если цель - лифт и мы его не исключаем, то требования к "открытости" могут быть ниже, т.к. это для pathfinding, а не спавна
+        const minSidesForInitial = 2;
+        if (
+          this.isTileOpenEnough(
+            targetTileX,
+            targetTileY,
+            minSidesForInitial,
+            avoidOneTileWidePassages
+          )
+        ) {
+          // if (isDebugCurrentCall) console.log(`  [findNearest] SUCCESS: Target tile (${targetTileX},${targetTileY}) is suitable.`);
+          return { x: (targetTileX + 0.5) * this.tileSize, y: (targetTileY + 0.5) * this.tileSize };
+        }
       }
     }
 
-    // 2. Wyszukiwanie Promieniowe (szukamy KORYTARZA lub PODŁOGI POKOJU)
+    // 2. Радиальный поиск
     for (let radius = 1; radius <= maxRadius; radius++) {
+      // Если избегаем узких проходов, для ближайших соседей (radius=1) требуем больше открытых сторон
+      const currentRadiusMinOpenSides = 2;
+      // if (isDebugCurrentCall && radius === 1) console.log(`  [findNearest] Radial search (radius 1), minOpenSides for check: ${currentRadiusMinOpenSides}`);
+
       for (let dy = -radius; dy <= radius; dy++) {
         for (let dx = -radius; dx <= radius; dx++) {
-          // Sprawdzamy tylko granicę obecnego promienia
-          if (Math.abs(dx) < radius && Math.abs(dy) < radius) continue;
-
+          if (Math.abs(dx) < radius && Math.abs(dy) < radius) continue; // Только граница текущего радиуса
           const checkX = targetTileX + dx;
           const checkY = targetTileY + dy;
 
-          // Upewnij się, że w granicach
-          if (checkX < 0 || checkX >= this.cols || checkY < 0 || checkY >= this.rows) continue;
+          if (checkX < 0 || checkX >= this.cols || checkY < 0 || checkY >= this.rows) continue; // В пределах карты
 
           const tileValue = this.map[checkY]?.[checkX];
-          // Znaleziono bezpieczne miejsce (korytarz lub podłoga pokoju)?
-          if (tileValue === TILE_CORRIDOR || tileValue === TILE_ROOM_FLOOR) {
-            console.log(
-              `  [MapUtil] Znaleziono bezpieczną kratkę przez wyszukiwanie promieniowe na kratce(${checkX}, ${checkY})`
-            );
-            return { x: (checkX + 0.5) * this.tileSize, y: (checkY + 0.5) * this.tileSize };
+          if (targetSafeTiles.includes(tileValue) && (!excludeLift || tileValue !== TILE_LIFT)) {
+            // Подходит ли тип тайла
+            if (
+              this.isTileOpenEnough(
+                checkX,
+                checkY,
+                currentRadiusMinOpenSides,
+                avoidOneTileWidePassages
+              )
+            ) {
+              // if (isDebugCurrentCall) console.log(`  [findNearest] SUCCESS: Radial found (${checkX},${checkY}) at radius ${radius}.`);
+              return { x: (checkX + 0.5) * this.tileSize, y: (checkY + 0.5) * this.tileSize };
+            }
           }
         }
       }
     }
 
-    // 3. Wyszukiwanie BFS (Fallback) - Szukaj od celu na zewnątrz
-    console.warn(
-      `[MapUtil] Wyszukiwanie promieniowe nie powiodło się (maxPromień ${maxRadius}). Rozpoczynam BFS od kratki(${targetTileX}, ${targetTileY})...`
-    );
+    // 3. Поиск BFS (запасной вариант)
+    // if (isDebugCurrentCall) console.warn(`  [findNearest] Radial search failed for target (${targetTileX},${targetTileY}). Starting BFS...`);
+    const bfsMinOpenSides = 2; // Для BFS стандартные 2 стороны, но с проверкой avoidOneTileWidePassages
     const queue = [[targetTileX, targetTileY]];
     const visited = new Set([`${targetTileX},${targetTileY}`]);
     const directions = [
@@ -298,13 +349,12 @@ export class ProceduralMap {
       [0, 1],
       [-1, 0],
       [1, 0],
-    ];
-    // Przechodnie kratki *dla ścieżki wyszukiwania BFS* (można przejść PRZEZ windę, ale WINDA nie jest CELEM, jeśli excludeLift=true)
-    const bfsWalkablePath = [TILE_CORRIDOR, TILE_ROOM_FLOOR, TILE_LIFT];
+    ]; // N, S, W, E
+    // Для пути BFS можно проходить через лифт, даже если excludeLift=true (мы не хотим на нем ОСТАНОВИТЬСЯ)
+    const bfsWalkablePathTiles = [TILE_CORRIDOR, TILE_ROOM_FLOOR, TILE_LIFT];
 
     while (queue.length > 0) {
       const [currX, currY] = queue.shift();
-
       for (const [dx, dy] of directions) {
         const nextX = currX + dx;
         const nextY = currY + dy;
@@ -318,41 +368,201 @@ export class ProceduralMap {
           !visited.has(key)
         ) {
           const tileValue = this.map[nextY]?.[nextX];
-          visited.add(key); // Oznacz jako odwiedzone niezależnie od typu dla efektywności BFS
+          visited.add(key);
 
-          // Znaleziono docelową bezpieczną kratkę? (Korytarz lub Podłoga Pokoju)
-          if (targetSafeTiles.includes(tileValue)) {
-            // Dodatkowe sprawdzenie, jeśli wykluczamy windę
-            if (!excludeLift || tileValue !== TILE_LIFT) {
-              console.log(
-                `  [MapUtil] Znaleziono bezpieczną kratkę przez BFS na (${nextX}, ${nextY})`
-              );
+          if (targetSafeTiles.includes(tileValue) && (!excludeLift || tileValue !== TILE_LIFT)) {
+            // Нашли подходящий тип тайла
+            if (this.isTileOpenEnough(nextX, nextY, bfsMinOpenSides, avoidOneTileWidePassages)) {
+              // И он достаточно открыт
+              // if (isDebugCurrentCall) console.log(`  [findNearest] SUCCESS: BFS found (${nextX},${nextY}).`);
               return { x: (nextX + 0.5) * this.tileSize, y: (nextY + 0.5) * this.tileSize };
             }
           }
-
-          // Czy możemy kontynuować wyszukiwanie Z tego sąsiada? (Korytarz, Podłoga Pokoju LUB Winda)
-          if (bfsWalkablePath.includes(tileValue)) {
+          // Если тайл проходим для BFS, добавляем в очередь
+          if (bfsWalkablePathTiles.includes(tileValue)) {
             queue.push([nextX, nextY]);
           }
         }
       }
     }
 
-    console.error(
-      `[MapUtil] KRYTYCZNA PORAŻKA: BFS nie mógł znaleźć ŻADNEJ bezpiecznej przechodniej kratki (Korytarz/Podłoga Pokoju, excludeLift=${excludeLift}) zaczynając od kratki(${targetTileX}, ${targetTileY})!`
-    );
-    return null; // Zasygnalizuj całkowitą porażkę
+    // if (isDebugCurrentCall) console.error(`  [findNearest] FAILURE: No suitable tile found for target (${targetTileX},${targetTileY}) after all searches.`);
+    return null;
+  }
+
+  getSpawnPointInRoomOfLift(liftTileX, liftTileY, preferredDistance = 2) {
+    const isDebugCurrentCall = this.floorNumber === DEBUG_FLOOR;
+    // if (isDebugCurrentCall) console.log(`[ProcMap F${this.floorNumber} getSpawnPointInRoomOfLift] Called for lift at (${liftTileX}, ${liftTileY}), preferredDist: ${preferredDistance}`);
+
+    let associatedRoom = null;
+    let entryPointToRoom = null; // {x, y} - клетка пола комнаты, примыкающая к лифту/коридору лифта
+    let directionFromSourceToEntryPoint = null; // {dx, dy} - направление от источника (лифт или коридор у лифта) к entryPointToRoom
+
+    const checkNeighbors = [
+      { dx: 0, dy: -1 },
+      { dx: 0, dy: 1 },
+      { dx: -1, dy: 0 },
+      { dx: 1, dy: 0 },
+    ]; // N, S, W, E
+
+    // Этап 1: Лифт напрямую примыкает к комнате?
+    // Клетка лифта liftTileX, liftTileY МОЖЕТ быть TILE_CORRIDOR в this.map, если путь был проложен к ней.
+    for (const n of checkNeighbors) {
+      const adjX = liftTileX + n.dx; // Сосед клетки лифта
+      const adjY = liftTileY + n.dy;
+      if (
+        adjX >= 0 &&
+        adjX < this.cols &&
+        adjY >= 0 &&
+        adjY < this.rows &&
+        this.map[adjY]?.[adjX] === TILE_ROOM_FLOOR
+      ) {
+        for (const room of this.rooms) {
+          if (
+            adjX >= room.x &&
+            adjX < room.x + room.width &&
+            adjY >= room.y &&
+            adjY < room.y + room.height
+          ) {
+            associatedRoom = room;
+            entryPointToRoom = { x: adjX, y: adjY }; // Это и есть точка входа в комнату
+            directionFromSourceToEntryPoint = { dx: n.dx, dy: n.dy }; // Направление от лифта к этой точке
+            // if (isDebugCurrentCall) console.log(`  [getSpawnPointInRoomOfLift] Lift (${liftTileX},${liftTileY}) directly adjacent to room floor at (${adjX},${adjY}). Room ID: ${room.id || 'N/A'}`);
+            break;
+          }
+        }
+      }
+      if (associatedRoom) break;
+    }
+
+    // Этап 2: Если не напрямую, то через одну клетку коридора?
+    if (!associatedRoom) {
+      // if (isDebugCurrentCall) console.log(`  [getSpawnPointInRoomOfLift] Lift not directly adjacent. Checking neighbors of neighbors (via 1 corridor tile)...`);
+      for (const nOuter of checkNeighbors) {
+        // nOuter - направление к возможной клетке коридора рядом с лифтом
+        const corridorX = liftTileX + nOuter.dx;
+        const corridorY = liftTileY + nOuter.dy;
+
+        // Проверяем, что эта промежуточная клетка - коридор
+        if (
+          corridorX < 0 ||
+          corridorX >= this.cols ||
+          corridorY < 0 ||
+          corridorY >= this.rows ||
+          this.map[corridorY]?.[corridorX] !== TILE_CORRIDOR
+        ) {
+          continue;
+        }
+
+        for (const nInner of checkNeighbors) {
+          // nInner - направление от клетки коридора к возможной комнате
+          // Не смотрим обратно на исходную клетку лифта
+          if (nInner.dx === -nOuter.dx && nInner.dy === -nOuter.dy) continue;
+
+          const potentialRoomX = corridorX + nInner.dx;
+          const potentialRoomY = corridorY + nInner.dy;
+
+          if (
+            potentialRoomX >= 0 &&
+            potentialRoomX < this.cols &&
+            potentialRoomY >= 0 &&
+            potentialRoomY < this.rows &&
+            this.map[potentialRoomY]?.[potentialRoomX] === TILE_ROOM_FLOOR
+          ) {
+            for (const room of this.rooms) {
+              if (
+                potentialRoomX >= room.x &&
+                potentialRoomX < room.x + room.width &&
+                potentialRoomY >= room.y &&
+                potentialRoomY < room.y + room.height
+              ) {
+                associatedRoom = room;
+                entryPointToRoom = { x: potentialRoomX, y: potentialRoomY }; // Это точка входа в комнату
+                directionFromSourceToEntryPoint = { dx: nInner.dx, dy: nInner.dy }; // Направление от коридора к этой точке
+                // if (isDebugCurrentCall) console.log(`  [getSpawnPointInRoomOfLift] Lift near room via corridor (${corridorX},${corridorY}). Entry to room at (${potentialRoomX},${potentialRoomY}). Room ID: ${room.id || 'N/A'}`);
+                break;
+              }
+            }
+          }
+          if (associatedRoom) break; // Нашли комнату через nInner
+        }
+        if (associatedRoom) break; // Нашли комнату через nOuter
+      }
+    }
+
+    if (!associatedRoom || !entryPointToRoom || !directionFromSourceToEntryPoint) {
+      //   if (isDebugCurrentCall) console.warn(`  [getSpawnPointInRoomOfLift] Could not find an associated room or entry point for lift at (${liftTileX},${liftTileY}).`);
+      return null;
+    }
+
+    // Теперь directionFromSourceToEntryPoint - это направление от "двери" (entryPointToRoom) ВГЛУБЬ комнаты.
+    const inwardDx = directionFromSourceToEntryPoint.dx;
+    const inwardDy = directionFromSourceToEntryPoint.dy;
+
+    // Ищем точку на (preferredDistance - 1) шагов вглубь от entryPointToRoom
+    // preferredDistance = 2 -> dist = 1 (1 шаг от входа), dist = 0 (сам вход)
+    // preferredDistance = 1 -> dist = 0 (сам вход)
+    for (let distOffset = preferredDistance - 1; distOffset >= 0; distOffset--) {
+      const spawnCandidateTileX = entryPointToRoom.x + inwardDx * distOffset;
+      const spawnCandidateTileY = entryPointToRoom.y + inwardDy * distOffset;
+      // if (isDebugCurrentCall) console.log(`  [getSpawnPointInRoomOfLift] Trying candidate (${spawnCandidateTileX},${spawnCandidateTileY}) at distOffset ${distOffset} from entry ${JSON.stringify(entryPointToRoom)}`);
+
+      if (
+        spawnCandidateTileX >= associatedRoom.x &&
+        spawnCandidateTileX < associatedRoom.x + associatedRoom.width &&
+        spawnCandidateTileY >= associatedRoom.y &&
+        spawnCandidateTileY < associatedRoom.y + associatedRoom.height &&
+        this.map[spawnCandidateTileY]?.[spawnCandidateTileX] === TILE_ROOM_FLOOR
+      ) {
+        // Проверка: есть ли еще одна клетка пола комнаты ЗА этой кандидатской точкой (в том же направлении inward)
+        // Это гарантирует, что мы не спавнимся вплотную к "дальней" стене комнаты, если комната узкая.
+        const furtherInX = spawnCandidateTileX + inwardDx;
+        const furtherInY = spawnCandidateTileY + inwardDy;
+        const hasSpaceBehind =
+          furtherInX >= associatedRoom.x &&
+          furtherInX < associatedRoom.x + associatedRoom.width &&
+          furtherInY >= associatedRoom.y &&
+          furtherInY < associatedRoom.y + associatedRoom.height &&
+          this.map[furtherInY]?.[furtherInX] === TILE_ROOM_FLOOR;
+
+        if (
+          this.isTileOpenEnough(spawnCandidateTileX, spawnCandidateTileY, 2, true) &&
+          hasSpaceBehind
+        ) {
+          //   if (isDebugCurrentCall) console.log(`  [getSpawnPointInRoomOfLift] SUCCESS: Found suitable spawn point in room: Tile (${spawnCandidateTileX},${spawnCandidateTileY}). Has space behind: ${hasSpaceBehind}`);
+          return {
+            x: (spawnCandidateTileX + 0.5) * this.tileSize,
+            y: (spawnCandidateTileY + 0.5) * this.tileSize,
+          };
+        } else {
+          // if (isDebugCurrentCall) console.log(`  [getSpawnPointInRoomOfLift] Candidate (${spawnCandidateTileX},${spawnCandidateTileY}) not suitable. OpenEnough: ${this.isTileOpenEnough(spawnCandidateTileX, spawnCandidateTileY, 2, true)}, HasSpaceBehind: ${hasSpaceBehind}`);
+        }
+      } else {
+        // if (isDebugCurrentCall) console.log(`  [getSpawnPointInRoomOfLift] Candidate (${spawnCandidateTileX},${spawnCandidateTileY}) is not valid room floor or out of room bounds.`);
+      }
+    }
+
+    // Если не нашли идеальную точку с пространством за спиной, пробуем сам entryPointToRoom (если он подходит)
+    if (this.isTileOpenEnough(entryPointToRoom.x, entryPointToRoom.y, 2, true)) {
+      // if (isDebugCurrentCall) console.log(`  [getSpawnPointInRoomOfLift] Fallback: Using entry point to room (${entryPointToRoom.x},${entryPointToRoom.y}) as it's open enough.`);
+      return {
+        x: (entryPointToRoom.x + 0.5) * this.tileSize,
+        y: (entryPointToRoom.y + 0.5) * this.tileSize,
+      };
+    }
+
+    // if (isDebugCurrentCall) console.warn(`  [getSpawnPointInRoomOfLift] FAILURE: Could not find any suitable spawn point inside room for lift at (${liftTileX},${liftTileY}).`);
+    return null;
   }
 
   findNearbyUnansweredBook(worldX, worldY, radius = this.tileSize * 0.8) {
-    if (!this.books) return null;
+    if (!this.books || this.books.length === 0) return null;
     let closestBook = null;
     let minDistanceSq = radius * radius;
 
     for (const book of this.books) {
-      const isCollected = book.isCollected || book.collected; // Sprawdź obie flagi
-      if (!isCollected) {
+      if (!book.isCollected) {
+        // Предполагаем, что у Book есть свойство isCollected
         const dx = book.x - worldX;
         const dy = book.y - worldY;
         const distanceSq = dx * dx + dy * dy;
@@ -367,11 +577,10 @@ export class ProceduralMap {
 
   markBookAsCollected(bookToCollect) {
     if (!bookToCollect || !this.books) return false;
-    const book = this.books.find((b) => b === bookToCollect || b.id === bookToCollect.id);
-    if (book && !(book.isCollected || book.collected)) {
+    const book = this.books.find((b) => b.id === bookToCollect.id); // Ищем по ID
+    if (book && !book.isCollected) {
       book.isCollected = true;
-      book.collected = true; // Ustaw obie dla bezpieczeństwa
-      console.log(`[Map] Oznaczono książkę ${book.id} jako zebraną.`);
+      // console.log(`[ProcMap F${this.floorNumber}] Book ${book.id} marked as collected.`);
       return true;
     }
     return false;
@@ -379,78 +588,79 @@ export class ProceduralMap {
 
   findNearbyLift(worldX, worldY, radius = this.tileSize * LIFT_INTERACTION_RADIUS_MULTIPLIER) {
     if (!this.liftPosition) return null;
-    // Sprawdź odległość od środka postaci do środka kafelka windy
-    const dx = worldX - this.liftPosition.x;
+    // Расстояние от центра персонажа до центра клетки лифта
+    const dx = worldX - this.liftPosition.x; // liftPosition.x - мировые координаты
     const dy = worldY - this.liftPosition.y;
     const distanceSq = dx * dx + dy * dy;
     return distanceSq < radius * radius ? this.liftPosition : null;
   }
 
   getLiftPosition() {
-    // Upewnij się, że zwracasz kopię, jeśli liftPosition jest modyfikowalne, chociaż tutaj wydaje się ok
-    return this.liftPosition;
+    return this.liftPosition; // Возвращает {x, y, tileX, tileY}
   }
 
-  // --- Rysowanie ---
   draw(ctx, bookImage = null) {
-    if (!this.map || !this.renderer) return; // Nie rysuj, jeśli mapa nie została wygenerowana
+    if (!this.map || !this.renderer) return;
 
-    // Przygotuj payload danych dla renderera
     const mapData = {
       map: this.map,
       rooms: this.rooms,
-      books: this.books,
-      liftPosition: this.liftPosition,
-      offsetX: this.offsetX, // Przekaż potencjalnie niecałkowity offset
+      books: this.books, // Передаем актуальный массив книг
+      liftPosition: this.liftPosition, // Передаем tileX, tileY и мировые x,y лифта
+      offsetX: this.offsetX,
       offsetY: this.offsetY,
       cols: this.cols,
       rows: this.rows,
       tileSize: this.tileSize,
     };
-
-    // Deleguj rysowanie do renderera
-    this.renderer.draw(ctx, mapData, bookImage);
+    this.renderer.draw(ctx, mapData, bookImage); // bookImage - это спрайт для книг
   }
 
-  // --- Debugowanie ---
   logMapGrid() {
     if (!this.map) {
-      console.log('Siatka mapy niedostępna.');
+      console.log(`[ProcMap F${this.floorNumber}] Map grid not available.`);
       return;
     }
-    console.log(`--- Siatka Mapy Piętro ${this.floorNumber} (${this.cols}x${this.rows}) ---`);
-    let header = '   ';
+    console.log(`--- Map Grid Floor ${this.floorNumber} (${this.cols}x${this.rows}) ---`);
+    let header = '   '; // Для номеров столбцов
     for (let c = 0; c < this.cols; c++) header += c % 10 === 0 ? Math.floor(c / 10) : ' ';
     console.log(header);
     header = '   ';
     for (let c = 0; c < this.cols; c++) header += c % 10;
     console.log(header);
+
     for (let y = 0; y < this.rows; y++) {
       const rowNum = y.toString().padStart(2, ' ');
       const rowString = this.map[y]
         .map((tile) => {
           switch (tile) {
             case TILE_WALL:
-              return '#'; // Ściana
+              return '#'; // Стена
             case TILE_CORRIDOR:
-              return '.'; // Korytarz
+              return '.'; // Коридор
             case TILE_ROOM_FLOOR:
-              return ' '; // Podłoga pokoju
+              return ' '; // Пол комнаты
             case TILE_LIFT:
-              return 'L'; // Winda
+              return 'L'; // Лифт (хотя он может быть перезаписан коридором в this.map)
             default:
-              return '?'; // Nieznany
+              return '?'; // Неизвестный тайл
           }
         })
         .join('');
       console.log(`${rowNum} ${rowString}`);
     }
-    // Zaloguj pozycję windy dla weryfikacji
     if (this.liftPosition) {
-      console.log(`Winda na kratce: (${this.liftPosition.tileX}, ${this.liftPosition.tileY})`);
+      console.log(
+        `Lift actual tile type in map[${this.liftPosition.tileY}][${this.liftPosition.tileX}]: ${
+          this.map[this.liftPosition.tileY]?.[this.liftPosition.tileX]
+        }`
+      );
+      console.log(
+        `Lift reported at tile: (${this.liftPosition.tileX}, ${this.liftPosition.tileY})`
+      );
     } else {
-      console.log('Pozycja windy nie ustawiona.');
+      console.log('Lift position not set.');
     }
-    console.log(`--- Koniec Siatki Mapy Piętro ${this.floorNumber} ---`);
+    console.log(`--- End Map Grid Floor ${this.floorNumber} ---`);
   }
-} // Koniec klasy ProceduralMap
+}

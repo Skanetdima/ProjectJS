@@ -8,23 +8,29 @@ import {
   questions,
   TARGET_BOOKS_TO_WIN,
   LIFT_COOLDOWN_MS,
-  TILE_WALL,
+  // TILE_WALL, // Not used directly here, can be removed if there are no other uses
 } from '../utils/constants.js';
 import { GameRenderer } from './GameRenderer.js';
 import { GameplayManager } from './GameplayManager.js';
+import { AudioManager } from '../audio/AudioManager.js';
 
-// Импорты ресурсов
-import redSprite from '../../images/character_red.png';
-import blueSprite from '../../images/character_blue.png';
-import yellowSprite from '../../images/character_yellow.png';
-import greenSprite from '../../images/character_green.png';
-import bookSprite from '../../images/book.png';
+// Importy zasobów
+import redSprite from '../../assets/images/character_red.png';
+import blueSprite from '../../assets/images/character_blue.png';
+import yellowSprite from '../../assets/images/character_yellow.png';
+import greenSprite from '../../assets/images/character_green.png';
+import bookSprite from '../../assets/images/book.png';
 
 export class Game {
+  // Static properties for Game Over screen information
+
+  static CREATOR_NAMES = ['Rafał', 'Dima', 'Venia', 'Kacper'];
+  static CLASS_ATTENDING_INFO = 'Klasa 2P2T / Projektowanie stron internetowych';
+
   constructor(characterColor) {
     console.log(`[Game] Initializing with character: ${characterColor}`);
     this.characterColor = characterColor;
-    this._gameState = GameState.LOADING; // Начальное состояние
+    this._gameState = GameState.LOADING;
     this.isRunning = false;
 
     this.totalBooksCollectedGlobally = 0;
@@ -41,63 +47,52 @@ export class Game {
     this.level = null;
     this.inputManager = null;
     this.renderer = null;
-    this.gameplayManager = null; // Будет инициализирован в конструкторе
+    this.gameplayManager = null;
+    this.audioManager = null;
 
     this.sprites = { red: redSprite, blue: blueSprite, yellow: yellowSprite, green: greenSprite };
     this.bookImage = null;
 
     this.gameLoop = this.gameLoop.bind(this);
     this._handleFatalError = this._handleFatalError.bind(this);
-    this._boundKeyDownHandler = null; // Для удаления слушателей
+    this._boundKeyDownHandler = null;
     this._boundKeyUpHandler = null;
 
-    // --- Последовательность инициализации ---
     try {
-      // 1. Основные компоненты (синхронно)
-      this._initializeCoreComponents(); // InputManager, Level
+      this._initializeCoreComponents();
 
-      // 2. GameplayManager (синхронно, до UI)
+      this.audioManager = new AudioManager();
+      console.log('[Game] AudioManager created.');
       this.gameplayManager = new GameplayManager(this);
       console.log('[Game] GameplayManager created.');
 
-      // 3. Рендерер и Canvas (синхронно)
       this.renderer = new GameRenderer(this);
       const { canvas, ctx } = this.renderer.initializeCanvas();
       this.canvas = canvas;
       this.ctx = ctx;
       console.log('[Game] Renderer and Canvas initialized.');
 
-      // 4. Инициализация UI (синхронно, GameplayManager уже доступен)
       this._initializeUIManager();
       console.log('[Game] UIManager setup initiated.');
 
-      // 5. Глобальные слушатели (синхронно)
       this._addEventListeners();
 
-      // 6. Асинхронная загрузка ресурсов и запуск основной логики игры
-      //    Обработка ошибок этой асинхронной операции происходит внутри неё
-      //    или через .catch(), если _loadAssetsAndStart возвращает Promise.
       this._loadAssetsAndThenStartLogic()
         .then(() => {
           console.log('[Game] Async loading and game logic start sequence completed.');
         })
         .catch((error) => {
-          // Эта ошибка должна быть уже обработана в _loadAssetsAndThenStartLogic
-          // или _handleFatalError, но для безопасности логируем еще раз.
           console.error(
             '[Game] Unhandled error from _loadAssetsAndThenStartLogic in constructor:',
             error
           );
-          // Убедимся, что игра не в состоянии зависания загрузки
-          const loadingOverlay = document.querySelector('.loading-overlay');
+          const loadingOverlay = UIManager.getLoadingOverlay(); // Używamy UIManagera
           if (loadingOverlay) loadingOverlay.classList.remove('visible');
         });
     } catch (error) {
-      // Ловим ошибки синхронной части конструктора
       console.error('[Game] Synchronous core initialization failed:', error);
-      // Показываем alert, т.к. UIManager.flashMessage может быть еще не готов
       alert(`Critical initialization error: ${error.message}. Game cannot start.`);
-      this._handleFatalError(`Initialization error: ${error.message}`, false); // false, т.к. alert уже был
+      this._handleFatalError(`Initialization error: ${error.message}`, false);
     }
   }
 
@@ -113,7 +108,7 @@ export class Game {
 
   _initializeCoreComponents() {
     this.inputManager = new InputManager();
-    this.level = new Level(1, 3); // Пример: этажи от 1 до 3
+    this.level = new Level(1, 3); // Przykład: piętra od 1 do 3
   }
 
   _initializeUIManager() {
@@ -123,10 +118,8 @@ export class Game {
     if (!this.inputManager) {
       throw new Error('[Game] InputManager is NOT defined when _initializeUIManager is called!');
     }
-    // Сначала передаем GameplayManager в UIManager
     UIManager.setGameplayManager(this.gameplayManager);
-    // Затем инициализируем остальные элементы UI, которые могут зависеть от InputManager
-    UIManager.initializeUI(this.inputManager); // Этот метод создаст контролы, UI вопросов и т.д.
+    UIManager.initializeUI(this.inputManager);
   }
 
   _addEventListeners() {
@@ -134,23 +127,18 @@ export class Game {
   }
 
   async _loadAssetsAndThenStartLogic() {
-    const loadingOverlay = document.querySelector('.loading-overlay');
+    const loadingOverlay = UIManager.getLoadingOverlay();
     try {
-      this.setGameState(GameState.LOADING); // Убедимся, что состояние LOADING перед загрузкой
-      // Оверлей загрузки уже должен быть показан из Menu.js
+      this.setGameState(GameState.LOADING);
 
-      await this._loadAssets(); // Загрузка спрайтов, книги и т.д.
-
-      // После загрузки ресурсов запускаем основную логику игры
+      await this._loadAssets();
       await this._startGameLogic();
 
-      // Скрываем оверлей загрузки после успешного старта всей логики
       if (loadingOverlay) loadingOverlay.classList.remove('visible');
     } catch (error) {
       console.error('[Game] Asset loading or game logic start failed:', error);
-      if (loadingOverlay) loadingOverlay.classList.remove('visible'); // Убрать оверлей при ошибке
+      if (loadingOverlay) loadingOverlay.classList.remove('visible');
       this._handleFatalError(`Asset/Start Logic Error: ${error.message}`);
-      // Важно перебросить ошибку, если этот метод вызывается так, что ожидается Promise
       throw error;
     }
   }
@@ -158,7 +146,7 @@ export class Game {
   async _loadAssets() {
     console.log('[Game] Loading assets...');
     const promises = [];
-    const spritePath = this.sprites[this.characterColor] || this.sprites.red; // Выбор спрайта
+    const spritePath = this.sprites[this.characterColor] || this.sprites.red;
 
     if (!this.ctx) throw new Error('Canvas context not available for Character creation.');
     this.character = new Character(this.ctx, spritePath, {
@@ -184,7 +172,6 @@ export class Game {
       this.bookImage.src = bookSprite;
       promises.push(
         new Promise((resolve) => {
-          // Ошибку загрузки книги не считаем фатальной
           this.bookImage.onload = () => {
             console.log(`  [Assets] Book image loaded: ${bookSprite}`);
             resolve();
@@ -193,8 +180,8 @@ export class Game {
             console.warn(
               ` [Assets] Failed to load book image: ${bookSprite}. Using fallback rendering.`
             );
-            this.bookImage = null; // Сбрасываем, чтобы использовать fallback
-            resolve(); // Все равно resolve, т.к. это некритично
+            this.bookImage = null;
+            resolve();
           };
         })
       );
@@ -209,15 +196,18 @@ export class Game {
 
   async _startGameLogic() {
     console.log('[Game] Starting core game logic...');
-    if (!this.level || !this.character || !this.canvas || !this.renderer || !this.gameplayManager) {
+    if (
+      !this.level ||
+      !this.character ||
+      !this.canvas ||
+      !this.renderer ||
+      !this.gameplayManager ||
+      !this.audioManager
+    ) {
       throw new Error('Cannot start game - essential components are missing.');
     }
 
-    // Состояние LOADING_LEVEL или PREPARING_LEVEL
     this.setGameState(GameState.LOADING_LEVEL);
-    // UIManager.hideGameUI(); // Уже должно быть скрыто из Menu.js или при ошибке
-    // UIManager.hideQuestion();
-    // UIManager.hideFloorSelectionUI();
 
     try {
       await this.level.loadFloor(this.level.minFloor, this.canvas.width, this.canvas.height);
@@ -231,11 +221,10 @@ export class Game {
       this.character.currentDirection = Character.Direction.DOWN;
       this.character.isMoving = false;
 
-      // Убедимся, что персонаж не заспавнился в стене
       this.gameplayManager.ensureCharacterIsOnWalkableTile(false);
 
       this.totalBooksCollectedGlobally = 0;
-      this.availableQuestions = [...questions]; // Свежая копия вопросов
+      this.availableQuestions = [...questions];
       this.liftCooldownActive = false;
       clearTimeout(this.liftCooldownTimer);
       this.liftCooldownTimer = null;
@@ -245,13 +234,15 @@ export class Game {
       this.renderer.centerCameraOnCharacter();
 
       UIManager.updateScore(this.totalBooksCollectedGlobally, this.targetBooksToWin);
-      UIManager.showGameUI(); // Показываем canvas, счет, контролы
+      UIManager.showGameUI();
 
-      // Добавляем слушатели клавиатуры
       this._boundKeyDownHandler = this.handleKeyDown.bind(this);
       this._boundKeyUpHandler = this.handleKeyUp.bind(this);
       window.addEventListener('keydown', this._boundKeyDownHandler);
       window.addEventListener('keyup', this._boundKeyUpHandler);
+
+      this.audioManager.startInitialMusic(this.level.currentFloor);
+      console.log(`[Game] Initial music started for floor ${this.level.currentFloor}`);
 
       this.setGameState(GameState.PLAYING);
       if (!this.isRunning) {
@@ -262,8 +253,7 @@ export class Game {
     } catch (error) {
       console.error('[Game] Error during _startGameLogic:', error);
       this._handleFatalError(`Level start process error: ${error.message}`);
-      // this.isRunning = false; // _handleFatalError это сделает
-      throw error; // Перебросить ошибку для обработки в _loadAssetsAndThenStartLogic
+      throw error;
     }
   }
 
@@ -275,51 +265,43 @@ export class Game {
     if (this.character) this.character.isMoving = false;
     clearTimeout(this.liftCooldownTimer);
 
+    if (this.audioManager) {
+      this.audioManager.stopMusic();
+    }
+
     if (this._boundKeyDownHandler) window.removeEventListener('keydown', this._boundKeyDownHandler);
     if (this._boundKeyUpHandler) window.removeEventListener('keyup', this._boundKeyUpHandler);
     this._boundKeyDownHandler = null;
     this._boundKeyUpHandler = null;
 
-    UIManager.hideGameUI();
-    UIManager.hideQuestion();
-    UIManager.hideFloorSelectionUI();
+    // Wywoływane wewnątrz showGameOverScreen
+    // Wywoływane wewnątrz showGameOverScreen
+    // Wywoływane wewnątrz showGameOverScreen
 
-    if (win) {
-      requestAnimationFrame(() => this.renderer?.drawWinScreen());
-    } else {
-      // При проигрыше/ошибке, Menu.js должен быть снова виден.
-      // Это можно сделать, удалив класс 'hidden' или установив display
-      const menuContainer = document.getElementById('menu-container');
-      if (menuContainer) {
-        menuContainer.classList.remove('hidden'); // Предполагаем, что Menu.js добавил 'hidden'
-        // menuContainer.style.display = 'flex'; // Или так, если класс не используется
-      }
-    }
+    UIManager.showGameOverScreen(win, Game.CREATOR_NAMES, Game.CLASS_ATTENDING_INFO);
+
     console.log(`[Game] Game Over. Win: ${win}`);
   }
 
   stopGame() {
     console.log('[Game] Explicit stopGame requested.');
-    this._setGameOver(false); // Завершаем игру как проигрыш/остановку
-
-    // window.removeEventListener('resize', () => this.renderer?.resizeCanvas()); // Слушатель остается, если игра может перезапуститься
-
-    // Очистка ресурсов не обязательна, если экземпляр Game будет удален
-    // this.character = null; ...
+    this._setGameOver(false);
     console.log('[Game] Game stopped.');
   }
 
   _handleFatalError(message, showAlert = true) {
     console.error('[Game] FATAL ERROR:', message);
     if (showAlert && this.gameState !== GameState.GAME_OVER) {
-      // Используем UIManager.flashMessage если он доступен, иначе alert
       if (UIManager.flashMessageContainer && UIManager.flashMessage) {
         UIManager.flashMessage(`FATAL ERROR: ${message}`, 'error', 15000);
       } else {
         alert(`FATAL ERROR: ${message}`);
       }
     }
-    this._setGameOver(false); // Завершаем игру
+    // Upewnijmy się, że gra przechodzi w stan GAME_OVER i pokazuje odpowiedni ekran.
+    if (this.gameState !== GameState.GAME_OVER) {
+      this._setGameOver(false);
+    }
   }
 
   handleKeyDown(e) {

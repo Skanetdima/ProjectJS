@@ -1,5 +1,5 @@
 // src/UI/UIManager.js
-// import { GameState } from '../utils/constants.js'; // Если нужно для логики внутри UIManager
+import { GameState } from '../utils/constants.js'; // Раскомментируйте, если нужно для логики внутри UIManager
 
 export class UIManager {
   static scoreElement = null;
@@ -11,20 +11,24 @@ export class UIManager {
   static floorSelectionPanel = null;
   static floorButtonsContainer = null;
   static flashMessageContainer = null;
+  static loadingOverlayElement = null; // Для кэширования элемента
+
+  // Элементы для экрана Game Over
+  static gameOverScreenElement = null;
+  static gameOverTitleElement = null;
+  static creatorNamesListElement = null;
+  static classInfoElement = null;
+  static returnToMenuButtonElement = null;
 
   static gameplayManagerInstance = null; // Ссылка на GameplayManager
   static flashMessageTimeouts = {};
 
   /**
    * Вызывается из Game.js для регистрации экземпляра GameplayManager.
-   * Это должно произойти ДО вызова UIManager.initializeUI() или любых методов,
-   * которые используют gameplayManagerInstance (showQuestion, showFloorSelectionUI).
-   * @param {GameplayManager} manager - Экземпляр GameplayManager.
    */
   static setGameplayManager(manager) {
     if (!manager) {
       console.error('[UIManager] Attempted to set GameplayManager instance to null or undefined!');
-      // throw new Error("GameplayManager instance cannot be null/undefined for UIManager."); // Можно сделать ошибку фатальной
       return;
     }
     this.gameplayManagerInstance = manager;
@@ -39,18 +43,17 @@ export class UIManager {
     console.log('[UIManager] Initializing base UI elements (controls, panels)...');
     if (!inputManager) {
       console.error('[UIManager] InputManager is required for initializeUI to create controls.');
-      // throw new Error("InputManager is required for UIManager.initializeUI");
     }
-    this.createControls(inputManager); // Зависит от inputManager
-    this.createQuestionUI(); // Не зависит напрямую от gameplayManager для создания, но для показа - да
-    this.createFloorSelectionUI(); // Аналогично
+    this.createControls(inputManager);
+    this.createQuestionUI();
+    this.createFloorSelectionUI();
     this.ensureFlashMessageContainer();
+    this.createGameOverScreen(); // Инициализация экрана Game Over
 
-    // Проверка, был ли gameplayManagerInstance установлен ранее через setGameplayManager
     if (!this.gameplayManagerInstance) {
       console.warn(
         '[UIManager] WARNING: GameplayManager instance is NOT SET at the end of initializeUI. ' +
-          'Ensure Game.js calls UIManager.setGameplayManager() *before* UIManager.initializeUI() or related show methods.'
+          'Ensure Game.js calls UIManager.setGameplayManager() *before* UIManager.initializeUI().'
       );
     }
     console.log('[UIManager] Base UI element initialization complete.');
@@ -61,10 +64,10 @@ export class UIManager {
     if (!this.controlsContainer) {
       this.controlsContainer = document.createElement('div');
       this.controlsContainer.id = 'controls-container';
-      this.controlsContainer.classList.add('controls-container'); // Из вашего CSS
+      this.controlsContainer.classList.add('controls-container');
       document.body.appendChild(this.controlsContainer);
     }
-    this.controlsContainer.innerHTML = ''; // Очистить предыдущие
+    this.controlsContainer.innerHTML = '';
 
     const arrows = [
       { direction: 'up', icon: '↑', gridArea: 'up' },
@@ -78,10 +81,9 @@ export class UIManager {
       btn.className = `control-btn ${direction}`;
       btn.textContent = icon;
       btn.style.gridArea = gridArea;
-      btn.dataset.direction = direction; // Для возможного использования
+      btn.dataset.direction = direction;
 
       if (inputManager) {
-        // Только если inputManager передан
         const startPress = (e) => {
           inputManager.setKey(direction, true);
           btn.classList.add('active');
@@ -89,7 +91,6 @@ export class UIManager {
         };
         const endPress = (e) => {
           if (inputManager.keys[direction]) {
-            // Только если была активна
             inputManager.setKey(direction, false);
           }
           btn.classList.remove('active');
@@ -109,7 +110,7 @@ export class UIManager {
     if (!scoreDisplayContainer) {
       const scoreDiv = document.createElement('div');
       scoreDiv.id = 'score-display';
-      scoreDiv.classList.add('score-display'); // Из вашего CSS
+      scoreDiv.classList.add('score-display');
       scoreDiv.innerHTML = `Books: <span id="score-value">0</span> / <span id="score-target">?</span>`;
       document.body.appendChild(scoreDiv);
       this.scoreElement = scoreDiv.querySelector('#score-value');
@@ -127,7 +128,7 @@ export class UIManager {
     if (!this.questionOverlay) {
       this.questionOverlay = document.createElement('div');
       this.questionOverlay.id = 'question-overlay';
-      this.questionOverlay.classList.add('ui-panel'); // Базовый класс для скрытия/показа и стилей
+      this.questionOverlay.classList.add('ui-panel');
       this.questionOverlay.innerHTML = `
         <div id="blackboard-content">
           <h2>Question</h2>
@@ -150,7 +151,7 @@ export class UIManager {
     if (!this.floorSelectionPanel) {
       this.floorSelectionPanel = document.createElement('div');
       this.floorSelectionPanel.id = 'floor-selection-ui';
-      this.floorSelectionPanel.classList.add('ui-panel'); // Базовый класс
+      this.floorSelectionPanel.classList.add('ui-panel');
       this.floorSelectionPanel.innerHTML = `
         <h2>Select Floor</h2>
         <div id="floor-buttons-container"></div>`;
@@ -167,14 +168,12 @@ export class UIManager {
     if (!this.flashMessageContainer) {
       this.flashMessageContainer = document.createElement('div');
       this.flashMessageContainer.id = 'flash-message-container';
-      // Стили для flash-message-container должны быть в CSS
       document.body.appendChild(this.flashMessageContainer);
     }
     return this.flashMessageContainer;
   }
 
   static flashMessage(message, type = 'info', duration = 3000) {
-    // ... (ваш улучшенный код flashMessage остается без изменений) ...
     const container = this.ensureFlashMessageContainer();
     if (!container) {
       console.error('[UIManager] Flash message container not found or creatable.');
@@ -206,19 +205,106 @@ export class UIManager {
           messageElement.parentNode.removeChild(messageElement);
         }
         delete this.flashMessageTimeouts[messageId];
-      }, 500); // Slightly longer than CSS transition
+      }, 500);
     };
     this.flashMessageTimeouts[messageId] = setTimeout(removeElement, duration);
   }
 
+  static getLoadingOverlay() {
+    if (!this.loadingOverlayElement) {
+      this.loadingOverlayElement = document.getElementById('loading-overlay');
+      if (!this.loadingOverlayElement) {
+        this.loadingOverlayElement = document.createElement('div');
+        this.loadingOverlayElement.id = 'loading-overlay';
+        this.loadingOverlayElement.className = 'loading-overlay';
+        const loadingText = document.createElement('p');
+        loadingText.textContent = 'Loading...';
+        this.loadingOverlayElement.appendChild(loadingText);
+        document.body.appendChild(this.loadingOverlayElement);
+        console.log('[UIManager] Loading overlay created and appended to body.');
+      }
+    }
+    return this.loadingOverlayElement;
+  }
+
+  static createGameOverScreen() {
+    this.gameOverScreenElement = document.getElementById('game-over-screen');
+    if (!this.gameOverScreenElement) {
+      console.error('[UIManager] CRITICAL: #game-over-screen element not found in HTML!');
+      return;
+    }
+    this.gameOverTitleElement = this.gameOverScreenElement.querySelector('#game-over-title');
+    this.creatorNamesListElement = this.gameOverScreenElement.querySelector('#creator-names');
+    this.classInfoElement = this.gameOverScreenElement.querySelector('#class-info');
+    this.returnToMenuButtonElement =
+      this.gameOverScreenElement.querySelector('#return-to-menu-button');
+
+    if (
+      !this.gameOverTitleElement ||
+      !this.creatorNamesListElement ||
+      !this.classInfoElement ||
+      !this.returnToMenuButtonElement
+    ) {
+      console.error(
+        '[UIManager] Failed to find one or more child elements of the game over screen!'
+      );
+      return;
+    }
+
+    this.returnToMenuButtonElement.addEventListener('click', () => {
+      window.location.reload();
+    });
+    console.log('[UIManager] Game Over screen elements initialized.');
+  }
+
+  static showGameOverScreen(isWin, creators = [], classInfoText = '') {
+    if (
+      !this.gameOverScreenElement ||
+      !this.gameOverTitleElement ||
+      !this.creatorNamesListElement ||
+      !this.classInfoElement
+    ) {
+      console.error('[UIManager] Game Over Screen not fully initialized. Cannot show.');
+      this.createGameOverScreen();
+      if (!this.gameOverScreenElement) return;
+    }
+
+    if (isWin) {
+      this.gameOverTitleElement.textContent = 'Congratulations! You Escaped!';
+      this.gameOverTitleElement.className = 'win-title';
+    } else {
+      this.gameOverTitleElement.textContent = 'Game Over';
+      this.gameOverTitleElement.className = 'lose-title';
+    }
+
+    this.creatorNamesListElement.innerHTML = '';
+    creators.forEach((name) => {
+      const li = document.createElement('li');
+      li.textContent = name;
+      this.creatorNamesListElement.appendChild(li);
+    });
+
+    this.classInfoElement.textContent = classInfoText;
+
+    this.gameOverScreenElement.classList.add('visible');
+    // Эти UI уже должны быть скрыты через hideGameUI, но для надежности:
+    this.hideGameUI();
+    this.hideQuestion();
+    this.hideFloorSelectionUI();
+  }
+
+  static hideGameOverScreen() {
+    if (this.gameOverScreenElement) {
+      this.gameOverScreenElement.classList.remove('visible');
+    }
+  }
+
   static showQuestion(questionData) {
     if (!this.questionOverlay || !this.questionTextElement || !this.answerButtonsContainer) {
-      console.error(
-        '[UIManager] Question UI not ready. Call createQuestionUI() or initializeUI().'
-      );
-      this.createQuestionUI(); // Попытка создать, если отсутствует
+      console.error('[UIManager] Question UI not ready.');
+      this.createQuestionUI();
       if (!this.questionOverlay || !this.questionTextElement || !this.answerButtonsContainer)
-        return; // Выход, если все еще нет
+        return;
     }
     if (!questionData) {
       console.error('[UIManager] Cannot show question - no questionData provided.');
@@ -229,14 +315,10 @@ export class UIManager {
       typeof this.gameplayManagerInstance.handleAnswer !== 'function'
     ) {
       console.error(
-        '[UIManager] CRITICAL: GameplayManager or its handleAnswer method is not set or invalid! Cannot show question.'
+        '[UIManager] CRITICAL: GameplayManager or its handleAnswer method is not set or invalid!'
       );
-      this.flashMessage(
-        'Error: Game interaction system failed (Q). Cannot display question.',
-        'error',
-        5000
-      );
-      this.hideQuestion(); // Скрыть UI, чтобы не было зависания
+      this.flashMessage('Error: Game interaction system failed (Q).', 'error', 5000);
+      this.hideQuestion();
       return;
     }
 
@@ -247,7 +329,7 @@ export class UIManager {
       const button = document.createElement('button');
       button.textContent = optionText;
       button.dataset.index = index;
-      button.classList.add('answer-button'); // Класс из CSS
+      button.classList.add('answer-button');
       button.addEventListener('click', (e) => {
         const selectedIndex = parseInt(e.target.dataset.index, 10);
         this.gameplayManagerInstance.handleAnswer(selectedIndex);
@@ -260,7 +342,6 @@ export class UIManager {
   static hideQuestion() {
     if (this.questionOverlay) {
       this.questionOverlay.classList.remove('visible');
-      // Очистка после скрытия (или немедленно)
       if (this.questionTextElement) this.questionTextElement.textContent = '';
       if (this.answerButtonsContainer) this.answerButtonsContainer.innerHTML = '';
     }
@@ -268,10 +349,8 @@ export class UIManager {
 
   static showFloorSelectionUI(minFloor, maxFloor, currentFloor) {
     if (!this.floorSelectionPanel || !this.floorButtonsContainer) {
-      console.error(
-        '[UIManager] Floor selection UI not ready. Call createFloorSelectionUI() or initializeUI().'
-      );
-      this.createFloorSelectionUI(); // Попытка создать
+      console.error('[UIManager] Floor selection UI not ready.');
+      this.createFloorSelectionUI();
       if (!this.floorSelectionPanel || !this.floorButtonsContainer) return;
     }
     if (
@@ -279,13 +358,9 @@ export class UIManager {
       typeof this.gameplayManagerInstance.handleFloorSelection !== 'function'
     ) {
       console.error(
-        '[UIManager] CRITICAL: GameplayManager or its handleFloorSelection method is not set or invalid! Cannot show floor selection.'
+        '[UIManager] CRITICAL: GameplayManager or its handleFloorSelection method is not set or invalid!'
       );
-      this.flashMessage(
-        'Error: Game interaction system failed (F). Cannot display floor selection.',
-        'error',
-        5000
-      );
+      this.flashMessage('Error: Game interaction system failed (F).', 'error', 5000);
       this.hideFloorSelectionUI();
       return;
     }
@@ -294,7 +369,7 @@ export class UIManager {
     for (let floor = minFloor; floor <= maxFloor; floor++) {
       const button = document.createElement('button');
       button.textContent = `Floor ${floor}`;
-      button.classList.add('floor-button'); // Класс из CSS
+      button.classList.add('floor-button');
       button.dataset.floor = floor;
       if (floor === currentFloor) {
         button.disabled = true;
@@ -323,19 +398,20 @@ export class UIManager {
   }
 
   static showGameUI() {
-    const canvas = document.getElementById('game-canvas') || document.getElementById('gameCanvas'); // Поддержка обоих ID
+    const canvas = document.getElementById('game-canvas') || document.getElementById('gameCanvas');
     const menuContainer = document.getElementById('menu-container');
     const scoreDisplay = document.getElementById('score-display');
 
-    if (canvas) canvas.style.display = 'block'; // Или 'flex', 'grid'
+    if (canvas) canvas.style.display = 'block';
     else console.warn('[UIManager] Canvas element not found to show.');
 
-    // Меню должно быть уже скрыто из Menu.js
-    if (menuContainer && !menuContainer.classList.contains('hidden')) {
-      console.warn(
-        '[UIManager] Menu container was not hidden before showing game UI. Hiding it now.'
-      );
-      menuContainer.classList.add('hidden');
+    if (
+      menuContainer &&
+      !menuContainer.classList.contains('hidden') &&
+      menuContainer.style.display !== 'none'
+    ) {
+      console.warn('[UIManager] Menu container was not hidden. Hiding it now via style.display.');
+      menuContainer.style.display = 'none'; // Более надежный способ скрыть
     }
 
     if (this.controlsContainer) this.controlsContainer.classList.add('visible');
@@ -344,22 +420,21 @@ export class UIManager {
     if (scoreDisplay) scoreDisplay.classList.add('visible');
     else console.warn('[UIManager] Score display not found to show.');
 
-    this.hideQuestion(); // Убедимся, что оверлеи скрыты
+    this.hideQuestion();
     this.hideFloorSelectionUI();
+    this.hideGameOverScreen(); // Убедимся, что экран Game Over скрыт
   }
 
   static hideGameUI() {
     const canvas = document.getElementById('game-canvas') || document.getElementById('gameCanvas');
     const scoreDisplay = document.getElementById('score-display');
-    // const menuContainer = document.getElementById('menu-container'); // Не показываем меню отсюда автоматически
 
     if (canvas) canvas.style.display = 'none';
     if (this.controlsContainer) this.controlsContainer.classList.remove('visible');
     if (scoreDisplay) scoreDisplay.classList.remove('visible');
 
-    this.hideQuestion();
-    this.hideFloorSelectionUI();
-
-    // Показ меню должен управляться логикой игры (например, в Game._setGameOver или из Menu.js)
+    // Не скрываем оверлеи вопросов/этажей/Game Over отсюда,
+    // т.к. они могут быть показаны *после* скрытия основного игрового UI.
+    // Их скрытие должно управляться конкретными состояниями игры.
   }
 }

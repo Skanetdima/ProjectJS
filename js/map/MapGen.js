@@ -29,14 +29,13 @@ const DEFAULT_GEN_PARAMS = {
 };
 
 // --- Core Generation Function ---
+// In generateLevelData, make sure to pass `rooms` to `_placeLift`
 export function generateLevelData(config) {
-  const { cols, rows, floorNumber, minFloor, tileSize, generationParams: userParams } = config; // Added tileSize
+  const { cols, rows, floorNumber, minFloor, tileSize, generationParams: userParams } = config;
   const genParams = { ...DEFAULT_GEN_PARAMS, ...userParams };
 
-  // Adjust gym chance for the first floor
   genParams.roomTypeWeights.gym = floorNumber === minFloor ? GYM_CHANCE_ON_FIRST_FLOOR * 100 : 0;
 
-  // Reset consistent lift coords on the first floor
   if (floorNumber === minFloor) {
     consistentLiftCoords = null;
     console.log(`[MapGen Floor ${floorNumber}] Reset consistent lift coords for the first floor.`);
@@ -44,24 +43,20 @@ export function generateLevelData(config) {
 
   console.log(`[MapGen Floor ${floorNumber}] Starting map generation (${cols}x${rows})...`);
   const map = Array.from({ length: rows }, () => Array(cols).fill(TILE_WALL));
-  const rooms = [];
+  const rooms = []; // This is the `roomsList`
   let liftPosition = null;
 
-  // --- Generation Steps ---
-  _placeRooms(map, rooms, cols, rows, genParams);
+  _placeRooms(map, rooms, cols, rows, genParams); // rooms is populated here
 
   if (rooms.length < 2 && floorNumber !== minFloor) {
-    // Allow single room on first floor maybe? Or handle differently
     console.warn(
       `[MapGen Floor ${floorNumber}] Placed only ${rooms.length} rooms. Expect limited connectivity.`
     );
-    // Consider adding a fallback: maybe connect the single room to the map edge or a random point?
   } else if (rooms.length >= 2) {
     _connectRoomsBetter(map, rooms, cols, rows);
   }
 
   try {
-    // Pass consistentLiftCoords reference, potentially update it inside
     const placedLiftData = _placeLift(
       map,
       cols,
@@ -69,10 +64,10 @@ export function generateLevelData(config) {
       floorNumber,
       minFloor,
       tileSize,
-      consistentLiftCoords
-    ); // Pass tileSize
+      consistentLiftCoords,
+      rooms // PASS THE GENERATED ROOMS LIST HERE
+    );
     liftPosition = placedLiftData.position;
-    // Update the module-level variable if it was newly set
     if (placedLiftData.coords) {
       consistentLiftCoords = placedLiftData.coords;
     }
@@ -81,12 +76,9 @@ export function generateLevelData(config) {
     throw new Error(`Lift placement failed on floor ${floorNumber}: ${error.message}`);
   }
 
-  // Ensure borders are walls AFTER placing lift and connections
   _ensureMapBorders(map, cols, rows);
 
-  // Final lift reachability check *after* potential forced connections
   if (liftPosition && !_isLiftReachable(map, liftPosition, cols, rows)) {
-    // Attempt to force connection one last time if unreachable
     console.warn(
       `[MapValidation Floor ${floorNumber}] Lift at tile(${liftPosition.tileX}, ${liftPosition.tileY}) initially unreachable. Attempting final force connection.`
     );
@@ -100,8 +92,6 @@ export function generateLevelData(config) {
     if (!connected || !_isLiftReachable(map, liftPosition, cols, rows)) {
       const errorMsg = `CRITICAL: Placed lift at tile(${liftPosition.tileX}, ${liftPosition.tileY}) is UNREACHABLE even after force connect! Generation failed.`;
       console.error(`[MapGen Floor ${floorNumber}] ${errorMsg}`);
-      // Optional: Log map grid here for debugging the unreachable state
-      // logMapGridForDebug(map, cols, rows);
       throw new Error(`Lift is unreachable on floor ${floorNumber}. Cannot proceed.`);
     } else {
       console.log(
@@ -113,12 +103,11 @@ export function generateLevelData(config) {
       `[MapValidation Floor ${floorNumber}] Lift at tile(${liftPosition.tileX}, ${liftPosition.tileY}) is reachable.`
     );
   } else {
-    // This case should have been caught earlier, but double-check
     throw new Error(`Map generated without a valid lift position on floor ${floorNumber}.`);
   }
 
   console.log(`[MapGen Floor ${floorNumber}] Map generation completed successfully.`);
-  return { map, rooms, liftPosition }; // Return the generated data
+  return { map, rooms, liftPosition };
 }
 
 // --- Helper: Place Rooms ---
@@ -308,29 +297,80 @@ function _carveVerticalCorridor(map, c, r1, r2, cols, rows) {
   }
 }
 
+// --- NEW HELPER: Get Tile Openness Details ---
+function _getTileOpennessDetails(tileX, tileY, map, cols, rows) {
+  // Local walkable definition for this helper
+  const isTileWalkable = (x, y, currentMap, mapCols, mapRows) => {
+    if (x < 0 || x >= mapCols || y < 0 || y >= mapRows) return false;
+    const tileVal = currentMap[y]?.[x];
+    return tileVal === TILE_CORRIDOR || tileVal === TILE_ROOM_FLOOR || tileVal === TILE_LIFT;
+  };
+
+  let openSides = 0;
+  // Order: N, S, W, E
+  const neighborDeltas = [
+    { dx: 0, dy: -1 },
+    { dx: 0, dy: 1 },
+    { dx: -1, dy: 0 },
+    { dx: 1, dy: 0 },
+  ];
+  let walkableNeighborFlags = [false, false, false, false]; // N, S, W, E
+
+  for (let i = 0; i < neighborDeltas.length; i++) {
+    const nx = tileX + neighborDeltas[i].dx;
+    const ny = tileY + neighborDeltas[i].dy;
+    if (isTileWalkable(nx, ny, map, cols, rows)) {
+      openSides++;
+      walkableNeighborFlags[i] = true;
+    }
+  }
+
+  let isChokepoint = false;
+  if (openSides === 2) {
+    const [N, S, W, E] = walkableNeighborFlags;
+    // Vertical chokepoint (N&S open, W&E closed) OR Horizontal chokepoint (W&E open, N&S closed)
+    if ((N && S && !W && !E) || (W && E && !N && !S)) {
+      isChokepoint = true;
+    }
+  }
+  return { openSides, isChokepoint };
+}
+
 // --- Helper: Place Lift ---
 // Takes current `liftCoords` and returns the used/found coords and position
-function _placeLift(map, cols, rows, floorNumber, minFloor, tileSize, currentConsistentCoords) {
+// Modify _placeLift to pass the rooms list to _findLiftPlacementLocation
+function _placeLift(
+  map,
+  cols,
+  rows,
+  floorNumber,
+  minFloor,
+  tileSize,
+  currentConsistentCoords,
+  roomsList
+) {
+  // Added roomsList
   let coordsToUse = currentConsistentCoords;
   let newlyFoundCoords = null;
 
   // Find coords only on the first floor if not already set
   if (floorNumber === minFloor && !coordsToUse) {
     console.log(`[MapGen Floor ${floorNumber}] Finding initial lift placement location...`);
-    coordsToUse = _findLiftPlacementLocation(map, cols, rows);
+    coordsToUse = _findLiftPlacementLocation(map, cols, rows, roomsList); // PASS roomsList
     if (!coordsToUse) {
-      // CRITICAL FALLBACK: If no suitable spot found, try placing near map center (even wall) and force connect
+      // Fallback: if no good room spot, try the previous general find logic (which includes corridors)
+      // For simplicity here, we'll just go to the center. A more robust fallback could be to call
+      // a version of _findLiftPlacementLocation that *does* consider corridors.
       console.warn(
-        `[MapGen Floor ${floorNumber}] No ideal lift location found. Forcing placement near center.`
+        `[MapGen Floor ${floorNumber}] No ideal IN-ROOM lift location found. Forcing placement near center.`
       );
       coordsToUse = { tileX: Math.floor(cols / 2), tileY: Math.floor(rows / 2) };
     }
     console.log(
       `[MapGen Floor ${floorNumber}] Established consistent lift coords at tile(${coordsToUse.tileX}, ${coordsToUse.tileY})`
     );
-    newlyFoundCoords = coordsToUse; // Mark that we found new coords
+    newlyFoundCoords = coordsToUse;
   } else if (!coordsToUse && floorNumber > minFloor) {
-    // This should ideally not happen if generation proceeds floor by floor
     throw new Error(`[MapGen Lift] Missing consistent coordinates for floor ${floorNumber}.`);
   }
 
@@ -338,30 +378,42 @@ function _placeLift(map, cols, rows, floorNumber, minFloor, tileSize, currentCon
 
   // Basic bounds check for safety
   if (tileY < 0 || tileY >= rows || tileX < 0 || tileX >= cols) {
+    // This might happen if the fallback coords are bad on a very small map
+    const safeFallbackX = Math.max(1, Math.min(cols - 2, tileX));
+    const safeFallbackY = Math.max(1, Math.min(rows - 2, tileY));
+    console.error(
+      `[MapGen Lift] Coords (${tileX}, ${tileY}) are outside map bounds on floor ${floorNumber}. Adjusted to (${safeFallbackX},${safeFallbackY})`
+    );
+    coordsToUse = { tileX: safeFallbackX, tileY: safeFallbackY };
+    // Re-assign tileX, tileY for the rest of the function
+    // This is a bit hacky; ideally, the primary find logic or its fallback should always return valid coords.
+    // However, if `consistentLiftCoords` were somehow invalid from a previous floor, this could be an issue.
+    // For now, we'll assume `_findLiftPlacementLocation` or its direct fallback is robust enough.
+    // The original error throw is better if we expect `coordsToUse` to always be valid from generation.
     throw new Error(
-      `[MapGen Lift] Coords (${tileX}, ${tileY}) are outside map bounds on floor ${floorNumber}.`
+      `[MapGen Lift] Coords (${coordsToUse.tileX}, ${coordsToUse.tileY}) are outside map bounds on floor ${floorNumber}.`
     );
   }
 
   // Check if the chosen spot is a wall; if so, attempt connection
+  // This is crucial if the fallback (center of map) was used.
   if (map[tileY][tileX] === TILE_WALL) {
     console.warn(
-      `[MapGen Floor ${floorNumber}] Lift location tile(${tileX}, ${tileY}) is a wall. Forcing connection...`
+      `[MapGen Floor ${floorNumber}] Lift location tile(${tileX}, ${tileY}) is a wall (likely fallback). Forcing connection...`
     );
     const connected = _forceConnectionToPoint(map, tileX, tileY, cols, rows);
     if (!connected) {
       console.error(
         `[MapGen Lift Connect] FAILED to connect wall at lift location tile(${tileX}, ${tileY}). Lift might be isolated.`
       );
-      // We still place the lift, but the reachability check later should fail.
     } else {
       console.log(`  [MapGen Lift Connect] Connection attempt finished for wall at lift location.`);
-      // Ensure the tile itself is marked as corridor *before* setting to LIFT
       if (map[tileY][tileX] === TILE_WALL) {
+        // Double check after connection
         console.warn(
           `  [MapGen Lift Connect] Force connection completed, but target tile (${tileX},${tileY}) remained WALL. Setting to CORRIDOR.`
         );
-        map[tileY][tileX] = TILE_CORRIDOR; // Manually ensure it's walkable before becoming lift
+        map[tileY][tileX] = TILE_CORRIDOR;
       }
     }
   } else {
@@ -373,7 +425,6 @@ function _placeLift(map, cols, rows, floorNumber, minFloor, tileSize, currentCon
   // Place the lift tile
   map[tileY][tileX] = TILE_LIFT;
 
-  // Calculate world position using the provided tileSize
   const liftWorldPos = {
     x: (tileX + 0.5) * tileSize,
     y: (tileY + 0.5) * tileSize,
@@ -387,81 +438,136 @@ function _placeLift(map, cols, rows, floorNumber, minFloor, tileSize, currentCon
     )}, ${liftWorldPos.y.toFixed(1)})`
   );
 
-  return { position: liftWorldPos, coords: newlyFoundCoords || coordsToUse }; // Return position and the definitive coords used/found
+  return { position: liftWorldPos, coords: newlyFoundCoords || coordsToUse };
 }
 
-// --- Helper: Find Lift Location (For First Floor) ---
-function _findLiftPlacementLocation(map, cols, rows) {
-  const centerX = Math.floor(cols / 2),
-    centerY = Math.floor(rows / 2);
-  let bestSpot = null;
-  let minDistanceSq = Infinity;
-  const maxSearchRadius = Math.max(centerX, centerY); // Search outwards from center
+// --- MODIFIED Helper: Find Lift Location (For First Floor) ---
+function _findLiftPlacementLocation(map, cols, rows, roomsList) {
+  // Added roomsList parameter
+  const centerX = Math.floor(cols / 2);
+  const centerY = Math.floor(rows / 2);
 
-  console.log(`  [MapGen FindLift] Searching for lift spot, max radius ${maxSearchRadius}...`);
+  let bestSpotCandidate = null;
 
-  for (let radius = 0; radius <= maxSearchRadius; radius++) {
-    for (let dy = -radius; dy <= radius; dy++) {
-      for (let dx = -radius; dx <= radius; dx++) {
-        // Only check the boundary of the current radius ring
-        if (radius > 0 && Math.abs(dx) < radius && Math.abs(dy) < radius) continue;
+  console.log(`  [MapGen FindLift V3] Searching for optimal lift spot INSIDE a room...`);
 
-        const checkX = centerX + dx;
-        const checkY = centerY + dy;
+  if (!roomsList || roomsList.length === 0) {
+    console.warn(
+      `  [MapGen FindLift V3] No rooms available to place a lift in. Fallback will be used by caller.`
+    );
+    return null;
+  }
 
-        // Check if inside map bounds (excluding outer border)
-        if (checkY >= 1 && checkY < rows - 1 && checkX >= 1 && checkX < cols - 1) {
-          const tile = map[checkY][checkX];
+  for (const room of roomsList) {
+    // Iterate "internal" floor tiles of the room.
+    // Internal tiles are at least 1 tile away from the room's bounding walls.
+    // Requires room to be at least 3x3 in size to have any internal tiles.
+    // (minRoomSize is 5, so a 5x5 room has a 3x3 internal area)
+    const startInternalCol = room.col + 1;
+    const endInternalCol = room.col + room.width - 2;
+    const startInternalRow = room.row + 1;
+    const endInternalRow = room.row + room.height - 2;
 
-          // Prefer placing on existing Corridor or Room Floor tiles
-          if (tile === TILE_CORRIDOR || tile === TILE_ROOM_FLOOR) {
-            // Check for at least one walkable (non-wall) neighbor to ensure it's not isolated
-            let isConnected = false;
-            const directions = [
-              [0, -1],
-              [0, 1],
-              [-1, 0],
-              [1, 0],
-            ];
-            for (const [ddx, ddy] of directions) {
-              const nx = checkX + ddx;
-              const ny = checkY + ddy;
-              // Check neighbor bounds and type (Corridor, Floor, or *existing* Lift if somehow present)
-              const neighborTile = map[ny]?.[nx];
-              if (
-                neighborTile === TILE_CORRIDOR ||
-                neighborTile === TILE_ROOM_FLOOR ||
-                neighborTile === TILE_LIFT
-              ) {
-                isConnected = true;
-                break;
+    if (startInternalCol > endInternalCol || startInternalRow > endInternalRow) {
+      // Room is too small (e.g., 2xN or Nx2) to have "internal" tiles by this definition.
+      // We could iterate all room.col to room.col + room.width -1 etc. if we want to include edges.
+      // For now, sticking to "internal" for better placement.
+      // console.log(`    [FindLift V3] Room ${room.id} (${room.width}x${room.height}) too small for internal tiles. Skipping.`);
+      continue;
+    }
+
+    for (let r = startInternalRow; r <= endInternalRow; r++) {
+      for (let c = startInternalCol; c <= endInternalCol; c++) {
+        // By definition, map[r][c] should be TILE_ROOM_FLOOR here.
+
+        let currentScore = 0;
+        const distSq = (c - centerX) * (c - centerX) + (r - centerY) * (r - centerY);
+        currentScore -= distSq / 30; // Proximity bonus
+
+        const detailsSelf = _getTileOpennessDetails(c, r, map, cols, rows);
+
+        if (detailsSelf.openSides < 1) {
+          // Should have at least 1 connection if it's a valid internal room tile.
+          continue;
+        }
+
+        if (detailsSelf.isChokepoint) {
+          currentScore -= 700; // Penalize if lift tile itself would form a chokepoint
+        }
+        currentScore += detailsSelf.openSides * 120; // More open sides for the lift tile are good.
+
+        let worstAccessPenaltyFromNeighbors = 0;
+        let numActualAccessPoints = 0;
+        const neighborDeltas = [
+          { dx: 0, dy: -1 },
+          { dx: 0, dy: 1 },
+          { dx: -1, dy: 0 },
+          { dx: 1, dy: 0 },
+        ];
+
+        for (const delta of neighborDeltas) {
+          const ncAccess = c + delta.dx;
+          const nrAccess = r + delta.dy;
+
+          if (nrAccess >= 0 && nrAccess < rows && ncAccess >= 0 && ncAccess < cols) {
+            const accessTileType = map[nrAccess]?.[ncAccess];
+            if (accessTileType === TILE_CORRIDOR || accessTileType === TILE_ROOM_FLOOR) {
+              numActualAccessPoints++;
+              const detailsAccessTile = _getTileOpennessDetails(
+                ncAccess,
+                nrAccess,
+                map,
+                cols,
+                rows
+              );
+
+              if (detailsAccessTile.openSides === 1) {
+                // Access tile only leads to our candidate (it's a stub)
+                worstAccessPenaltyFromNeighbors = Math.max(worstAccessPenaltyFromNeighbors, 30000); // Massive penalty
               }
-            }
 
-            if (isConnected) {
-              const distSq = dx * dx + dy * dy; // Distance from center
-              // Found a suitable spot, check if it's closer than previous best
-              if (distSq < minDistanceSq) {
-                minDistanceSq = distSq;
-                bestSpot = { tileX: checkX, tileY: checkY };
+              if (detailsAccessTile.isChokepoint) {
+                worstAccessPenaltyFromNeighbors = Math.max(worstAccessPenaltyFromNeighbors, 500);
               }
             }
           }
         }
-      } // end dx loop
-    } // end dy loop
 
-    // If we found a best spot in this radius ring, use it and stop searching
-    if (bestSpot) {
-      console.log(
-        `  [MapGen FindLift] Selected best spot at tile(${bestSpot.tileX}, ${bestSpot.tileY}) radius ${radius}.`
-      );
-      return bestSpot;
+        // If the lift candidate is in the middle of a room, numActualAccessPoints might be low
+        // if it's surrounded by other TILE_ROOM_FLOOR of the *same* room.
+        // detailsSelf.openSides is a better measure of its "embeddness" in this case.
+        // The critical part is that `worstAccessPenaltyFromNeighbors` catches bad *external* access.
+        if (numActualAccessPoints === 0 && detailsSelf.openSides < 2) {
+          // If it has no direct corridor/other room access AND is also very closed off itself
+          continue;
+        }
+
+        currentScore -= worstAccessPenaltyFromNeighbors;
+
+        if (bestSpotCandidate === null || currentScore > bestSpotCandidate.score) {
+          bestSpotCandidate = {
+            tileX: c,
+            tileY: r,
+            score: currentScore,
+            debug_room: room.id,
+            // Add other debug fields from previous version if needed
+          };
+        }
+      }
     }
-  } // end radius loop
+  }
 
-  console.warn('[MapGen FindLift] No suitable CORRIDOR or ROOM_FLOOR location found near center.');
-  // If no ideal spot, return null (the caller might force placement)
+  if (bestSpotCandidate) {
+    console.log(
+      `  [MapGen FindLift V3] Selected best spot IN ROOM (${bestSpotCandidate.debug_room}) at tile(${bestSpotCandidate.tileX}, ${bestSpotCandidate.tileY}). ` +
+        `Score: ${bestSpotCandidate.score.toFixed(0)}.`
+    );
+    return { tileX: bestSpotCandidate.tileX, tileY: bestSpotCandidate.tileY };
+  }
+
+  console.warn(
+    '[MapGen FindLift V3] No suitable IN-ROOM location found with internal tiles. Fallback will be used by caller.'
+  );
   return null;
 }
 

@@ -911,3 +911,89 @@ canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
   visibility: visible;
   transition-delay: 0s;
 }
+
+#game-over-screen {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(40, 40, 60, 0.95);
+  color: white;
+  padding: 30px 40px;
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  z-index: 1002; /* Выше, чем другие панели, но ниже flash-messages, если они должны быть сверху */
+  display: none; /* Скрыт по умолчанию */
+  flex-direction: column;
+  align-items: center;
+  gap: 20px; /* Пространство между элементами */
+  width: auto;
+  min-width: 300px;
+  max-width: 90%;
+}
+
+#game-over-screen.visible {
+  display: flex; /* Показываем через flex */
+}
+
+#game-over-screen h2 {
+  margin-top: 0;
+  font-size: 2.5em;
+  color: #ffcc00; /* Желтый для заголовка */
+}
+
+#game-over-screen h2.win-title {
+  color: #4caf50; /* Зеленый для победы */
+}
+
+#game-over-screen h2.lose-title {
+  color: #f44336; /* Красный для проигрыша */
+}
+
+.credits-board {
+  background-color: rgba(20, 20, 40, 0.8);
+  padding: 15px 25px;
+  border-radius: 10px;
+  border: 1px solid #555;
+}
+
+.credits-board h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #ddd;
+  font-size: 1.4em;
+}
+
+.credits-board ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 15px 0;
+}
+
+.credits-board ul li {
+  font-size: 1.2em;
+  padding: 3px 0;
+  color: #ccc;
+}
+
+.credits-board p {
+  font-size: 1.1em;
+  color: #bbb;
+  margin-bottom: 0;
+}
+
+#return-to-menu-button {
+  padding: 12px 25px;
+  font-size: 1.1em;
+  background-color: #4a90e2; /* Синий цвет кнопки */
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#return-to-menu-button:hover {
+  background-color: #357ebd;
+}
