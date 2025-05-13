@@ -7,7 +7,7 @@ module.exports = {
   entry: './js/main.js', // Your main JavaScript file
   output: {
     filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist'), // Output directory
+    path: path.resolve(__dirname, 'docs'), // Output directory
     clean: true, // Cleans the dist folder before each build
     assetModuleFilename: 'assets/[name][hash][ext][query]', // How to name assets like images/fonts
   },
