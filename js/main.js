@@ -4,10 +4,10 @@
 // Если этот файл находится в /js, а папка /src на том же уровне:
 import { Menu } from './UI/Menu.js';
 import '../css/styles.css';
-import redStudentImg from '../assets/images/character_red.png';
-import blueStudentImg from '../assets/images/character_blue.png';
-import yellowStudentImg from '../assets/images/character_yellow.png';
-import greenStudentImg from '../assets/images/character_green.png';
+import redStudentImg from '../assets/images/red.png';
+import blueStudentImg from '../assets/images/blue.png';
+import yellowStudentImg from '../assets/images/yellow.png';
+import greenStudentImg from '../assets/images/green.png';
 
 // Если этот файл находится в /src (и webpack entry был изменен):
 /*
