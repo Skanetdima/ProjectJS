@@ -89,6 +89,8 @@ export class Game {
           const loadingOverlay = UIManager.getLoadingOverlay(); // Używamy UIManagera
           if (loadingOverlay) loadingOverlay.classList.remove('visible');
         });
+
+      UIManager.initializeTimer();
     } catch (error) {
       console.error('[Game] Synchronous core initialization failed:', error);
       alert(`Critical initialization error: ${error.message}. Game cannot start.`);
@@ -196,6 +198,7 @@ export class Game {
 
   async _startGameLogic() {
     console.log('[Game] Starting core game logic...');
+    UIManager.startTimer();
     if (
       !this.level ||
       !this.character ||
@@ -244,6 +247,8 @@ export class Game {
       this.audioManager.startInitialMusic(this.level.currentFloor);
       console.log(`[Game] Initial music started for floor ${this.level.currentFloor}`);
 
+      UIManager.startTimer();
+
       this.setGameState(GameState.PLAYING);
       if (!this.isRunning) {
         this.isRunning = true;
@@ -274,11 +279,15 @@ export class Game {
     this._boundKeyDownHandler = null;
     this._boundKeyUpHandler = null;
 
+    UIManager.stopTimer(win);
+
     // Wywoływane wewnątrz showGameOverScreen
     // Wywoływane wewnątrz showGameOverScreen
     // Wywoływane wewnątrz showGameOverScreen
 
     UIManager.showGameOverScreen(win, Game.CREATOR_NAMES, Game.CLASS_ATTENDING_INFO);
+
+    UIManager.stopTimer(win);
 
     console.log(`[Game] Game Over. Win: ${win}`);
   }

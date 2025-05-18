@@ -23,6 +23,12 @@ export class UIManager {
   static gameplayManagerInstance = null; // Ссылка на GameplayManager
   static flashMessageTimeouts = {};
 
+  // New static fields
+  static timerElement = null;
+  static leaderboardElement = null;
+  static gameStartTime = 0;
+  static leaderboardData = [];
+
   /**
    * Вызывается из Game.js для регистрации экземпляра GameplayManager.
    */
@@ -49,6 +55,8 @@ export class UIManager {
     this.createFloorSelectionUI();
     this.ensureFlashMessageContainer();
     this.createGameOverScreen(); // Инициализация экрана Game Over
+    this.initializeTimer(); // Initialize timer
+    this.updateLeaderboard(); // Add this line
 
     if (!this.gameplayManagerInstance) {
       console.warn(
@@ -258,13 +266,8 @@ export class UIManager {
   }
 
   static showGameOverScreen(isWin, creators = [], classInfoText = '') {
-    if (
-      !this.gameOverScreenElement ||
-      !this.gameOverTitleElement ||
-      !this.creatorNamesListElement ||
-      !this.classInfoElement
-    ) {
-      console.error('[UIManager] Game Over Screen not fully initialized. Cannot show.');
+    if (!this.gameOverScreenElement) {
+      console.error('[UIManager] Game Over Screen not initialized');
       this.createGameOverScreen();
       if (!this.gameOverScreenElement) return;
     }
@@ -286,8 +289,10 @@ export class UIManager {
 
     this.classInfoElement.textContent = classInfoText;
 
+    // Update and show leaderboard
+    this.updateLeaderboard();
+    
     this.gameOverScreenElement.classList.add('visible');
-    // Эти UI уже должны быть скрыты через hideGameUI, но для надежности:
     this.hideGameUI();
     this.hideQuestion();
     this.hideFloorSelectionUI();
@@ -420,6 +425,10 @@ export class UIManager {
     if (scoreDisplay) scoreDisplay.classList.add('visible');
     else console.warn('[UIManager] Score display not found to show.');
 
+    if (this.timerElement) {
+      this.timerElement.style.display = 'block';
+    }
+
     this.hideQuestion();
     this.hideFloorSelectionUI();
     this.hideGameOverScreen(); // Убедимся, что экран Game Over скрыт
@@ -433,8 +442,95 @@ export class UIManager {
     if (this.controlsContainer) this.controlsContainer.classList.remove('visible');
     if (scoreDisplay) scoreDisplay.classList.remove('visible');
 
+    if (this.timerElement) {
+      this.timerElement.style.display = 'none';
+    }
+
     // Не скрываем оверлеи вопросов/этажей/Game Over отсюда,
     // т.к. они могут быть показаны *после* скрытия основного игрового UI.
     // Их скрытие должно управляться конкретными состояниями игры.
+  }
+
+  // New methods
+  static initializeTimer() {
+    if (!this.timerElement) {
+      this.timerElement = document.createElement('div');
+      this.timerElement.id = 'game-timer';
+      this.timerElement.classList.add('game-timer');
+      document.body.appendChild(this.timerElement);
+    }
+    
+    // Load leaderboard data from localStorage
+    const savedData = localStorage.getItem('gameLeaderboard');
+    this.leaderboardData = savedData ? JSON.parse(savedData) : [];
+    
+    // Create leaderboard element if needed
+    this.updateLeaderboard();
+  }
+
+  static startTimer() {
+    this.gameStartTime = Date.now();
+    this.updateTimer();
+  }
+
+  static updateTimer() {
+    if (!this.timerElement || !this.gameStartTime) return;
+    
+    const elapsed = Math.floor((Date.now() - this.gameStartTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    
+    this.timerElement.textContent = `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (this.gameStartTime) {
+      requestAnimationFrame(() => this.updateTimer());
+    }
+  }
+
+  static stopTimer(wasWin) {
+    if (!this.gameStartTime) return;
+    
+    const endTime = Date.now();
+    const totalTime = (endTime - this.gameStartTime) / 1000;
+    
+    if (wasWin) {
+      const runNumber = this.leaderboardData.length + 1;
+      this.leaderboardData.push({
+        name: `Run ${runNumber}`,
+        time: totalTime,
+        date: new Date().toLocaleDateString()
+      });
+      
+      // Sort by time ascending
+      this.leaderboardData.sort((a, b) => a.time - b.time);
+      
+      // Save to localStorage
+      localStorage.setItem('gameLeaderboard', JSON.stringify(this.leaderboardData));
+    }
+    
+    this.gameStartTime = 0;
+    this.updateLeaderboard();
+  }
+
+  static updateLeaderboard() {
+    const leaderboardBody = document.getElementById('leaderboard-body');
+    if (!leaderboardBody) return;
+
+    // Clear existing entries
+    leaderboardBody.innerHTML = '';
+    
+    // Add top 10 times
+    this.leaderboardData.slice(0, 10).forEach(run => {
+      const minutes = Math.floor(run.time / 60);
+      const seconds = Math.floor(run.time % 60);
+      
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${run.name}</td>
+        <td>${minutes}:${seconds.toString().padStart(2, '0')}</td>
+        <td>${run.date}</td>
+      `;
+      leaderboardBody.appendChild(row);
+    });
   }
 }
