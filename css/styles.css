@@ -912,25 +912,42 @@ canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
   transition-delay: 0s;
 }
 
+/* Update game over screen styles */
 #game-over-screen {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  max-height: 90vh; /* Limit height to 90% of viewport */
+  overflow-y: auto; /* Enable scroll for whole screen */
   background-color: rgba(40, 40, 60, 0.95);
   color: white;
   padding: 30px 40px;
   border-radius: 15px;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
   text-align: center;
-  z-index: 1002; /* Выше, чем другие панели, но ниже flash-messages, если они должны быть сверху */
-  display: none; /* Скрыт по умолчанию */
+  display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px; /* Пространство между элементами */
+  gap: 20px;
   width: auto;
   min-width: 300px;
   max-width: 90%;
+
+  /* Scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
 }
 
 #game-over-screen.visible {
@@ -1017,7 +1034,7 @@ canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
 
 .leaderboard {
   margin: 20px auto;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(20, 20, 40, 0.8);
   border-radius: 8px;
   padding: 15px;
   width: 100%;
@@ -1025,7 +1042,7 @@ canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
 }
 
 .leaderboard h2 {
-  color: white;
+  color: #ccc;
   text-align: center;
   margin-bottom: 15px;
   font-size: 1.5em;
@@ -1034,11 +1051,11 @@ canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
 .leaderboard table {
   width: 100%;
   border-collapse: collapse;
-  color: white;
+  color: #bbb;
 }
 
 .leaderboard th {
-  color: #ffd700;
+  color: #bbb;
   text-align: left;
   padding: 8px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.3);
@@ -1055,38 +1072,44 @@ canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
 
 #game-over-leaderboard {
   margin: 15px 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(20, 20, 40, 0.8);
   border-radius: 8px;
   padding: 15px;
   width: 100%;
   max-width: 500px;
+  border: 1px solid #555;
 }
 
-#game-over-leaderboard h3 {
-  color: #ffd700;
-  text-align: center;
-  margin-bottom: 15px;
+#game-over-leaderboard .table-container {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
 }
 
 #game-over-leaderboard table {
   width: 100%;
   border-collapse: collapse;
-  color: white;
+  color: #bbb;
   font-family: monospace;
 }
 
-#game-over-leaderboard th {
-  color: #ffd700;
-  text-align: left;
-  padding: 8px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-#game-over-leaderboard td {
-  padding: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-#game-over-leaderboard tr:last-child td {
-  border-bottom: none;
+#game-over-leaderboard thead {
+  position: sticky;
+  top: 0;
+  background: rgba(20, 20, 40, 0.95);
+  z-index: 1;
 }
