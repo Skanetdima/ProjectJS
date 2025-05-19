@@ -1,7 +1,8 @@
 // src/UI/UIManager.js
-import { GameState } from '../utils/constants.js'; // Раскомментируйте, если нужно для логики внутри UIManager
+import { GameState } from '../utils/constants.js'; // Используется для логики таймера
 
 export class UIManager {
+  // Свойства для элементов игрового UI
   static scoreElement = null;
   static targetElement = null;
   static controlsContainer = null;
@@ -11,7 +12,7 @@ export class UIManager {
   static floorSelectionPanel = null;
   static floorButtonsContainer = null;
   static flashMessageContainer = null;
-  static loadingOverlayElement = null; // Для кэширования элемента
+  static loadingOverlayElement = null;
 
   // Элементы для экрана Game Over
   static gameOverScreenElement = null;
@@ -19,63 +20,80 @@ export class UIManager {
   static creatorNamesListElement = null;
   static classInfoElement = null;
   static returnToMenuButtonElement = null;
+  static leaderboardBody = null; // tbody таблицы лидеров
 
-  static gameplayManagerInstance = null; // Ссылка на GameplayManager
+  static gameplayManagerInstance = null;
   static flashMessageTimeouts = {};
 
-  // New static fields
   static timerElement = null;
-  static leaderboardElement = null;
   static gameStartTime = 0;
-  static leaderboardData = [];
+  static leaderboardData = []; // Данные таблицы лидеров
 
-  /**
-   * Вызывается из Game.js для регистрации экземпляра GameplayManager.
-   */
+  // AudioManager здесь не нужен, т.к. UIManager не управляет громкостью напрямую.
+  // Menu.js и AudioManager.js занимаются этим.
+
   static setGameplayManager(manager) {
     if (!manager) {
       console.error('[UIManager] Attempted to set GameplayManager instance to null or undefined!');
       return;
     }
     this.gameplayManagerInstance = manager;
-    console.log('[UIManager] GameplayManager instance registered successfully with UIManager.');
+    console.log('[UIManager] GameplayManager instance registered successfully.');
   }
 
-  /**
-   * Инициализирует базовые элементы UI.
-   * Game.js должен вызвать setGameplayManager ПЕРЕД этим методом.
-   */
+  // Инициализирует ТОЛЬКО внутриигровые элементы UI
   static initializeUI(inputManager) {
-    console.log('[UIManager] Initializing base UI elements (controls, panels)...');
-    if (!inputManager) {
-      console.error('[UIManager] InputManager is required for initializeUI to create controls.');
-    }
-    this.createControls(inputManager);
-    this.createQuestionUI();
-    this.createFloorSelectionUI();
-    this.ensureFlashMessageContainer();
-    this.createGameOverScreen(); // Инициализация экрана Game Over
-    this.initializeTimer(); // Initialize timer
-    this.updateLeaderboard(); // Add this line
+    console.log('[UIManager] Initializing in-game UI elements...');
 
+    // Проверка inputManager, так как он используется для контролов
+    if (!inputManager) {
+      console.warn(
+        '[UIManager] InputManager not provided to initializeUI. On-screen controls might not function.'
+      );
+    }
+
+    // Создание и настройка элементов, используемых во время игры
+    this.createControls(inputManager); // Экранные кнопки управления
+    this.createQuestionUI(); // Панель с вопросами
+    this.createFloorSelectionUI(); // Панель выбора этажа
+    this.ensureFlashMessageContainer(); // Контейнер для flash-сообщений
+    this.getLoadingOverlay(); // Получаем/создаем оверлей загрузки (но не показываем)
+    this.createGameOverScreen(); // Экран завершения игры (включая таблицу лидеров)
+    this.initializeTimer(); // Элемент таймера игры
+
+    // Проверка, что GameplayManager был установлен (важно для интерактивных UI панелей)
     if (!this.gameplayManagerInstance) {
       console.warn(
         '[UIManager] WARNING: GameplayManager instance is NOT SET at the end of initializeUI. ' +
-          'Ensure Game.js calls UIManager.setGameplayManager() *before* UIManager.initializeUI().'
+          'Interactive UI elements (questions, floors) might not work correctly.'
       );
     }
-    console.log('[UIManager] Base UI element initialization complete.');
+    console.log('[UIManager] In-game UI element initialization complete.');
   }
 
+  // Методы createControls, createQuestionUI, createFloorSelectionUI, ensureFlashMessageContainer,
+  // getLoadingOverlay, createGameOverScreen, showGameOverScreen, hideGameOverScreen,
+  // showQuestion, hideQuestion, showFloorSelectionUI, hideFloorSelectionUI, updateScore,
+  // showGameUI, hideGameUI, initializeTimer, startTimer, updateTimer, stopTimer, updateLeaderboard
+  // ОСТАЮТСЯ ТАКИМИ ЖЕ, КАК В ПОЛНОЙ ВЕРСИИ UIManager.js из твоего предыдущего запроса,
+  // так как они уже были сфокусированы на внутриигровом UI.
+  // Я не буду их здесь дублировать для краткости, но ты должен скопировать их из своего
+  // кода UIManager.js, который я тебе ранее присылал (тот, где еще БЫЛА логика главного меню,
+  // но сами эти методы уже были правильными для ингейм UI).
+  // Важно: showGameUI() и hideGameUI() не должны пытаться управлять главным меню.
+
+  // Пример одного из методов, чтобы показать, что они остаются:
   static createControls(inputManager) {
     this.controlsContainer = document.getElementById('controls-container');
     if (!this.controlsContainer) {
       this.controlsContainer = document.createElement('div');
       this.controlsContainer.id = 'controls-container';
       this.controlsContainer.classList.add('controls-container');
+      // Важно: Append к правильному родительскому элементу, если это не body
+      // Например, к специальному #game-ui-layer если он есть
       document.body.appendChild(this.controlsContainer);
     }
-    this.controlsContainer.innerHTML = '';
+    this.controlsContainer.innerHTML = ''; // Очистка для переинициализации
 
     const arrows = [
       { direction: 'up', icon: '↑', gridArea: 'up' },
@@ -92,12 +110,15 @@ export class UIManager {
       btn.dataset.direction = direction;
 
       if (inputManager) {
+        // Только если inputManager передан
         const startPress = (e) => {
           inputManager.setKey(direction, true);
           btn.classList.add('active');
           e.preventDefault();
         };
         const endPress = (e) => {
+          // Проверяем, что ключ все еще удерживается этим инстансом InputManager
+          // Это полезно, если может быть несколько источников событий
           if (inputManager.keys[direction]) {
             inputManager.setKey(direction, false);
           }
@@ -109,26 +130,27 @@ export class UIManager {
         btn.addEventListener('touchcancel', endPress, { passive: false });
         btn.addEventListener('mousedown', startPress);
         btn.addEventListener('mouseup', endPress);
-        btn.addEventListener('mouseleave', endPress);
+        btn.addEventListener('mouseleave', endPress); // Если мышь ушла с кнопки, отпускаем
       }
       this.controlsContainer.appendChild(btn);
     });
 
+    // Инициализация отображения очков
     const scoreDisplayContainer = document.getElementById('score-display');
     if (!scoreDisplayContainer) {
       const scoreDiv = document.createElement('div');
       scoreDiv.id = 'score-display';
       scoreDiv.classList.add('score-display');
       scoreDiv.innerHTML = `Books: <span id="score-value">0</span> / <span id="score-target">?</span>`;
-      document.body.appendChild(scoreDiv);
+      document.body.appendChild(scoreDiv); // Аналогично, лучше в специальный контейнер
       this.scoreElement = scoreDiv.querySelector('#score-value');
       this.targetElement = scoreDiv.querySelector('#score-target');
     } else {
       this.scoreElement = scoreDisplayContainer.querySelector('#score-value');
       this.targetElement = scoreDisplayContainer.querySelector('#score-target');
-      if (this.scoreElement) this.scoreElement.textContent = '0';
-      if (this.targetElement) this.targetElement.textContent = '?';
     }
+    if (this.scoreElement) this.scoreElement.textContent = '0';
+    if (this.targetElement) this.targetElement.textContent = '?';
   }
 
   static createQuestionUI() {
@@ -213,7 +235,7 @@ export class UIManager {
           messageElement.parentNode.removeChild(messageElement);
         }
         delete this.flashMessageTimeouts[messageId];
-      }, 500);
+      }, 500); // Запасной таймаут
     };
     this.flashMessageTimeouts[messageId] = setTimeout(removeElement, duration);
   }
@@ -224,7 +246,7 @@ export class UIManager {
       if (!this.loadingOverlayElement) {
         this.loadingOverlayElement = document.createElement('div');
         this.loadingOverlayElement.id = 'loading-overlay';
-        this.loadingOverlayElement.className = 'loading-overlay';
+        this.loadingOverlayElement.className = 'loading-overlay'; // CSS должен скрывать по умолчанию
         const loadingText = document.createElement('p');
         loadingText.textContent = 'Loading...';
         this.loadingOverlayElement.appendChild(loadingText);
@@ -246,56 +268,64 @@ export class UIManager {
     this.classInfoElement = this.gameOverScreenElement.querySelector('#class-info');
     this.returnToMenuButtonElement =
       this.gameOverScreenElement.querySelector('#return-to-menu-button');
+    this.leaderboardBody = this.gameOverScreenElement.querySelector('#leaderboard-body');
 
     if (
       !this.gameOverTitleElement ||
       !this.creatorNamesListElement ||
       !this.classInfoElement ||
-      !this.returnToMenuButtonElement
+      !this.returnToMenuButtonElement ||
+      !this.leaderboardBody
     ) {
       console.error(
-        '[UIManager] Failed to find one or more child elements of the game over screen!'
+        '[UIManager] Failed to find one or more child elements of the game over screen (or leaderboard body)!'
       );
-      return;
+      return; // Прерываем, если важные элементы отсутствуют
     }
 
     this.returnToMenuButtonElement.addEventListener('click', () => {
+      // Перезагрузка страницы для возврата в главное меню (управляется Menu.js)
       window.location.reload();
     });
+    this.updateLeaderboard(); // Инициализируем/очищаем таблицу лидеров при создании экрана
     console.log('[UIManager] Game Over screen elements initialized.');
   }
 
   static showGameOverScreen(isWin, creators = [], classInfoText = '') {
     if (!this.gameOverScreenElement) {
-      console.error('[UIManager] Game Over Screen not initialized');
-      this.createGameOverScreen();
-      if (!this.gameOverScreenElement) return;
+      console.error('[UIManager] Game Over Screen not initialized, attempting to create.');
+      this.createGameOverScreen(); // Попытка создать, если его нет
+      if (!this.gameOverScreenElement) {
+        console.error('[UIManager] Still unable to show Game Over screen.');
+        return; // Если не удалось создать, выходим
+      }
     }
 
-    if (isWin) {
-      this.gameOverTitleElement.textContent = 'Congratulations! You Escaped!';
-      this.gameOverTitleElement.className = 'win-title';
-    } else {
-      this.gameOverTitleElement.textContent = 'Game Over';
-      this.gameOverTitleElement.className = 'lose-title';
+    if (this.gameOverTitleElement) {
+      this.gameOverTitleElement.textContent = isWin ? 'Congratulations! You Escaped!' : 'Game Over';
+      this.gameOverTitleElement.className = isWin ? 'win-title' : 'lose-title'; // Для стилизации
     }
 
-    this.creatorNamesListElement.innerHTML = '';
-    creators.forEach((name) => {
-      const li = document.createElement('li');
-      li.textContent = name;
-      this.creatorNamesListElement.appendChild(li);
-    });
+    if (this.creatorNamesListElement) {
+      this.creatorNamesListElement.innerHTML = ''; // Очищаем предыдущие
+      creators.forEach((name) => {
+        const li = document.createElement('li');
+        li.textContent = name;
+        this.creatorNamesListElement.appendChild(li);
+      });
+    }
 
-    this.classInfoElement.textContent = classInfoText;
+    if (this.classInfoElement) {
+      this.classInfoElement.textContent = classInfoText;
+    }
 
-    // Update and show leaderboard
-    this.updateLeaderboard();
-    
-    this.gameOverScreenElement.classList.add('visible');
-    this.hideGameUI();
-    this.hideQuestion();
-    this.hideFloorSelectionUI();
+    this.updateLeaderboard(); // Обновляем данные таблицы лидеров
+
+    this.gameOverScreenElement.classList.add('visible'); // Показываем экран
+    this.hideGameUI(); // Скрываем основной игровой UI (канвас, контролы, очки, таймер)
+    this.hideQuestion(); // Скрываем панель вопросов
+    this.hideFloorSelectionUI(); // Скрываем панель выбора этажей
+    // Главное меню уже должно быть скрыто Menu.js
   }
 
   static hideGameOverScreen() {
@@ -305,6 +335,7 @@ export class UIManager {
   }
 
   static showQuestion(questionData) {
+    // ... (Этот метод остается как в предыдущем полном UIManager.js)
     if (!this.questionOverlay || !this.questionTextElement || !this.answerButtonsContainer) {
       console.error('[UIManager] Question UI not ready.');
       this.createQuestionUI();
@@ -326,14 +357,12 @@ export class UIManager {
       this.hideQuestion();
       return;
     }
-
     this.questionTextElement.textContent = questionData.question;
     this.answerButtonsContainer.innerHTML = '';
-
     questionData.options.forEach((optionText, index) => {
       const button = document.createElement('button');
       button.textContent = optionText;
-      button.dataset.index = index;
+      button.dataset.index = index.toString();
       button.classList.add('answer-button');
       button.addEventListener('click', (e) => {
         const selectedIndex = parseInt(e.target.dataset.index, 10);
@@ -345,6 +374,7 @@ export class UIManager {
   }
 
   static hideQuestion() {
+    // ... (Этот метод остается как в предыдущем полном UIManager.js)
     if (this.questionOverlay) {
       this.questionOverlay.classList.remove('visible');
       if (this.questionTextElement) this.questionTextElement.textContent = '';
@@ -353,6 +383,7 @@ export class UIManager {
   }
 
   static showFloorSelectionUI(minFloor, maxFloor, currentFloor) {
+    // ... (Этот метод остается как в предыдущем полном UIManager.js)
     if (!this.floorSelectionPanel || !this.floorButtonsContainer) {
       console.error('[UIManager] Floor selection UI not ready.');
       this.createFloorSelectionUI();
@@ -369,13 +400,12 @@ export class UIManager {
       this.hideFloorSelectionUI();
       return;
     }
-
     this.floorButtonsContainer.innerHTML = '';
     for (let floor = minFloor; floor <= maxFloor; floor++) {
       const button = document.createElement('button');
       button.textContent = `Floor ${floor}`;
       button.classList.add('floor-button');
-      button.dataset.floor = floor;
+      button.dataset.floor = floor.toString();
       if (floor === currentFloor) {
         button.disabled = true;
         button.classList.add('current');
@@ -390,147 +420,173 @@ export class UIManager {
   }
 
   static hideFloorSelectionUI() {
+    // ... (Этот метод остается как в предыдущем полном UIManager.js)
     if (this.floorSelectionPanel) {
       this.floorSelectionPanel.classList.remove('visible');
     }
   }
 
   static updateScore(score, target) {
+    // ... (Этот метод остается как в предыдущем полном UIManager.js)
     if (!this.scoreElement) this.scoreElement = document.getElementById('score-value');
     if (!this.targetElement) this.targetElement = document.getElementById('score-target');
-    if (this.scoreElement) this.scoreElement.textContent = score;
-    if (this.targetElement) this.targetElement.textContent = target;
+    if (this.scoreElement) this.scoreElement.textContent = score.toString();
+    if (this.targetElement) this.targetElement.textContent = target.toString();
   }
 
   static showGameUI() {
-    const canvas = document.getElementById('game-canvas') || document.getElementById('gameCanvas');
-    const menuContainer = document.getElementById('menu-container');
+    // Показывает элементы, необходимые во время игры
+    console.log('[UIManager] Showing Game UI...');
+    // Главное меню должно быть уже скрыто Menu.js
+
+    const canvas = document.getElementById('game-canvas');
     const scoreDisplay = document.getElementById('score-display');
 
-    if (canvas) canvas.style.display = 'block';
-    else console.warn('[UIManager] Canvas element not found to show.');
-
-    if (
-      menuContainer &&
-      !menuContainer.classList.contains('hidden') &&
-      menuContainer.style.display !== 'none'
-    ) {
-      console.warn('[UIManager] Menu container was not hidden. Hiding it now via style.display.');
-      menuContainer.style.display = 'none'; // Более надежный способ скрыть
-    }
+    if (canvas) canvas.style.display = 'block'; // Убедимся, что канвас видим
+    else console.warn('[UIManager] Canvas element (#game-canvas) not found to show.');
 
     if (this.controlsContainer) this.controlsContainer.classList.add('visible');
     else console.warn('[UIManager] Controls container not found to show.');
 
-    if (scoreDisplay) scoreDisplay.classList.add('visible');
-    else console.warn('[UIManager] Score display not found to show.');
-
-    if (this.timerElement) {
-      this.timerElement.style.display = 'block';
+    if (scoreDisplay) {
+      scoreDisplay.style.display = 'flex'; // или 'block'
+      scoreDisplay.classList.add('visible');
+    } else {
+      console.warn('[UIManager] Score display not found to show.');
     }
 
+    if (this.timerElement) {
+      this.timerElement.style.display = 'block'; // или 'flex'
+    }
+
+    // Убедимся, что панели вопросов, этажей и Game Over скрыты при показе основного игрового UI
     this.hideQuestion();
     this.hideFloorSelectionUI();
-    this.hideGameOverScreen(); // Убедимся, что экран Game Over скрыт
+    this.hideGameOverScreen();
   }
 
   static hideGameUI() {
-    const canvas = document.getElementById('game-canvas') || document.getElementById('gameCanvas');
+    // Скрывает элементы активной игры (например, при показе Game Over или возврате в меню)
+    console.log('[UIManager] Hiding Game UI...');
+    const canvas = document.getElementById('game-canvas');
     const scoreDisplay = document.getElementById('score-display');
 
     if (canvas) canvas.style.display = 'none';
     if (this.controlsContainer) this.controlsContainer.classList.remove('visible');
-    if (scoreDisplay) scoreDisplay.classList.remove('visible');
-
+    if (scoreDisplay) {
+      scoreDisplay.style.display = 'none';
+      scoreDisplay.classList.remove('visible');
+    }
     if (this.timerElement) {
       this.timerElement.style.display = 'none';
     }
-
-    // Не скрываем оверлеи вопросов/этажей/Game Over отсюда,
-    // т.к. они могут быть показаны *после* скрытия основного игрового UI.
-    // Их скрытие должно управляться конкретными состояниями игры.
   }
 
-  // New methods
   static initializeTimer() {
+    // ... (Этот метод остается как в предыдущем полном UIManager.js)
     if (!this.timerElement) {
-      this.timerElement = document.createElement('div');
-      this.timerElement.id = 'game-timer';
-      this.timerElement.classList.add('game-timer');
-      document.body.appendChild(this.timerElement);
+      this.timerElement = document.getElementById('game-timer');
+      if (!this.timerElement) {
+        this.timerElement = document.createElement('div');
+        this.timerElement.id = 'game-timer';
+        this.timerElement.classList.add('game-timer');
+        const gameContainer = document.body; // Или более специфичный контейнер
+        gameContainer.appendChild(this.timerElement);
+      }
     }
-    
-    // Load leaderboard data from localStorage
+    this.timerElement.textContent = 'Time: 0:00';
+    this.timerElement.style.display = 'none'; // Скрыт по умолчанию, покажется с showGameUI
+
     const savedData = localStorage.getItem('gameLeaderboard');
     this.leaderboardData = savedData ? JSON.parse(savedData) : [];
-    
-    // Create leaderboard element if needed
-    this.updateLeaderboard();
+    this.updateLeaderboard(); // Обновляем таблицу лидеров (если она уже есть в DOM)
   }
 
   static startTimer() {
-    this.gameStartTime = Date.now();
-    this.updateTimer();
+    // ... (Этот метод остается как в предыдущем полном UIManager.js)
+    // Проверка, что игра в состоянии PLAYING, чтобы таймер не запускался преждевременно
+    if (this.gameplayManagerInstance?.game?.gameState === GameState.PLAYING) {
+      this.gameStartTime = Date.now();
+      this.updateTimer(); // Запускаем цикл обновления
+      console.log('[UIManager] Game timer started.');
+    } else {
+      console.warn('[UIManager] Timer start requested, but game is not in PLAYING state.');
+    }
   }
 
   static updateTimer() {
-    if (!this.timerElement || !this.gameStartTime) return;
-    
+    // ... (Этот метод остается как в предыдущем полном UIManager.js)
+    const game = this.gameplayManagerInstance?.game;
+    if (
+      !this.timerElement ||
+      !this.gameStartTime ||
+      !game ||
+      (game.gameState !== GameState.PLAYING &&
+        game.gameState !== GameState.QUESTION &&
+        game.gameState !== GameState.TRANSITIONING)
+    ) {
+      return; // Останавливаем цикл, если игра неактивна
+    }
     const elapsed = Math.floor((Date.now() - this.gameStartTime) / 1000);
     const minutes = Math.floor(elapsed / 60);
     const seconds = elapsed % 60;
-    
     this.timerElement.textContent = `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-    
-    if (this.gameStartTime) {
-      requestAnimationFrame(() => this.updateTimer());
-    }
+    requestAnimationFrame(() => this.updateTimer());
   }
 
   static stopTimer(wasWin) {
-    if (!this.gameStartTime) return;
-    
+    // ... (Этот метод остается как в предыдущем полном UIManager.js)
+    if (!this.gameStartTime) return; // Таймер не был запущен
     const endTime = Date.now();
-    const totalTime = (endTime - this.gameStartTime) / 1000;
-    
+    const totalTime = (endTime - this.gameStartTime) / 1000; // Время в секундах
+    console.log(
+      `[UIManager] Game timer stopped. Total time: ${totalTime.toFixed(3)}s. Win: ${wasWin}`
+    );
     if (wasWin) {
-      const runNumber = this.leaderboardData.length + 1;
+      const runName = `Run ${this.leaderboardData.length + 1}`;
       this.leaderboardData.push({
-        name: `Run ${runNumber}`,
+        name: runName,
         time: totalTime,
-        date: new Date().toLocaleDateString()
+        date: new Date().toLocaleDateString(),
       });
-      
-      // Sort by time ascending
       this.leaderboardData.sort((a, b) => a.time - b.time);
-      
-      // Save to localStorage
-      localStorage.setItem('gameLeaderboard', JSON.stringify(this.leaderboardData));
+      try {
+        localStorage.setItem('gameLeaderboard', JSON.stringify(this.leaderboardData.slice(0, 10)));
+      } catch (e) {
+        console.error('[UIManager] Failed to save leaderboard to localStorage:', e);
+      }
     }
-    
-    this.gameStartTime = 0;
-    this.updateLeaderboard();
+    this.gameStartTime = 0; // Сбрасываем время старта
+    this.updateLeaderboard(); // Обновляем отображение таблицы лидеров
   }
 
   static updateLeaderboard() {
-    const leaderboardBody = document.getElementById('leaderboard-body');
-    if (!leaderboardBody) return;
-
-    // Clear existing entries
-    leaderboardBody.innerHTML = '';
-    
-    // Add top 10 times
-    this.leaderboardData.slice(0, 10).forEach(run => {
-      const minutes = Math.floor(run.time / 60);
-      const seconds = Math.floor(run.time % 60);
-      
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${run.name}</td>
-        <td>${minutes}:${seconds.toString().padStart(2, '0')}</td>
-        <td>${run.date}</td>
-      `;
-      leaderboardBody.appendChild(row);
-    });
+    // ... (Этот метод остается как в предыдущем полном UIManager.js)
+    // this.leaderboardBody получается в createGameOverScreen
+    if (!this.leaderboardBody) {
+      // console.warn('[UIManager] Leaderboard table body not found for update.');
+      return;
+    }
+    this.leaderboardBody.innerHTML = '';
+    const topScores = this.leaderboardData.slice(0, 10);
+    if (topScores.length === 0) {
+      const row = this.leaderboardBody.insertRow();
+      const cell = row.insertCell();
+      cell.colSpan = 3;
+      cell.textContent = 'No records yet. Be the first!';
+      cell.style.textAlign = 'center';
+    } else {
+      topScores.forEach((run) => {
+        const minutes = Math.floor(run.time / 60);
+        const seconds = Math.floor(run.time % 60);
+        const milliseconds = Math.floor((run.time * 1000) % 1000);
+        const row = this.leaderboardBody.insertRow();
+        row.insertCell().textContent = run.name;
+        row.insertCell().textContent = `${minutes}:${seconds
+          .toString()
+          .padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+        row.insertCell().textContent = run.date;
+      });
+    }
   }
 }
