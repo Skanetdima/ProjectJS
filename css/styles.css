@@ -50,7 +50,10 @@ body {
 
 /* --- Menu Container --- */
 .menu-container {
-  background: rgba(48, 52, 60, 0.95);
+  background-image: url('../assets/images/logoGRAzsl.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
   padding: clamp(1.5rem, 5vw, 2.5rem);
   border-radius: 8px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
@@ -920,7 +923,10 @@ canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
   transform: translate(-50%, -50%);
   max-height: 90vh; /* Limit height to 90% of viewport */
   overflow-y: auto; /* Enable scroll for whole screen */
-  background-color: rgba(40, 40, 60, 0.95);
+  background-image: url('../assets/images/logoGRAzsl.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
   color: white;
   padding: 30px 40px;
   border-radius: 15px;
