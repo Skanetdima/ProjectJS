@@ -20,19 +20,17 @@ export class Game {
   static CLASS_ATTENDING_INFO = 'Klasa 2P2T / Projektowanie stron internetowych';
 
   constructor(characterColor) {
-    // characterColor передается из Menu.js
     console.log(`[Game] Initializing with character: ${characterColor}`);
     if (!characterColor) {
       const errorMsg = '[Game] CRITICAL: Game initialized without a characterColor!';
       console.error(errorMsg);
-      alert('Game cannot start: no character was selected.'); // Basic fallback
+      alert('Game cannot start: no character was selected.');
       throw new Error(errorMsg);
     }
     this.characterColor = characterColor;
-    this._gameState = GameState.IDLE; // Начальное состояние, игра еще не запущена
+    this._gameState = GameState.IDLE;
     this.isRunning = false;
 
-    // ... (остальные свойства инициализируются как раньше)
     this.totalBooksCollectedGlobally = 0;
     this.targetBooksToWin = TARGET_BOOKS_TO_WIN;
     this.availableQuestions = [];
@@ -47,7 +45,7 @@ export class Game {
     this.inputManager = null;
     this.renderer = null;
     this.gameplayManager = null;
-    this.audioManager = null; // Будет создан ниже
+    this.audioManager = null;
     this.sprites = {
       red: redSpritePath,
       blue: blueSpritePath,
@@ -61,17 +59,10 @@ export class Game {
     this._boundKeyUpHandler = null;
 
     try {
-      this._initializeCoreComponents(); // inputManager, level
+      this._initializeCoreComponents();
 
-      this.audioManager = new AudioManager(); // AudioManager создается здесь
+      this.audioManager = new AudioManager();
       console.log('[Game] AudioManager created.');
-      // Menu.js нуждается в AudioManager для слайдера громкости.
-      // Это можно сделать, если Menu - синглтон или если есть ссылка на экземпляр Menu.
-      // Поскольку Menu.js экспортирует currentGameInstance, который является экземпляром Game,
-      // а Menu создает Game, это создает цикл.
-      // Проще всего, чтобы Menu устанавливал громкость через localStorage, а AudioManager читал ее.
-      // Либо, если экземпляр Menu передается в Game, или используется глобальная ссылка на Menu.
-      // Пока что оставим так: AudioManager читает из localStorage. Menu.js уже пишет в localStorage.
 
       this.gameplayManager = new GameplayManager(this);
       console.log('[Game] GameplayManager created.');
@@ -82,51 +73,42 @@ export class Game {
       this.ctx = ctx;
       console.log('[Game] Renderer and Canvas initialized.');
 
-      // UIManager используется для внутриигрового UI. Menu.js управляет главным меню.
       UIManager.setGameplayManager(this.gameplayManager);
-      // UIManager.setAudioManager(this.audioManager); // UIManager не управляет громкостью напрямую
-      UIManager.initializeUI(this.inputManager); // Настраивает контролы, панели вопросов и т.д.
+      UIManager.initializeUI(this.inputManager); // Timer is initialized here, but not started
       console.log('[Game] UIManager for in-game UI initialized.');
 
       this._addEventListeners();
 
-      // Игра ждет вызова triggerGameStart() из Menu.js
-      // Menu.js вызовет его после создания этого экземпляра Game.
       console.log('[Game] Core components initialized. Waiting for triggerGameStart() from Menu.');
     } catch (error) {
       console.error('[Game] Synchronous core initialization failed:', error);
-      // UIManager может быть еще не готов для flashMessage
       alert(`Critical initialization error: ${error.message}. Game cannot start.`);
-      // Не вызываем _handleFatalError здесь, так как игра может не быть в состоянии его обработать
     }
   }
 
-  // Методы get gameState, setGameState, _initializeCoreComponents, _addEventListeners
-  // остаются такими же, как в предыдущем ответе.
   get gameState() {
     return this._gameState;
   }
+
   setGameState(newState) {
     if (this._gameState !== newState) {
       console.log(`[Game State] ${this._gameState} -> ${newState}`);
       this._gameState = newState;
     }
   }
+
   _initializeCoreComponents() {
     this.inputManager = new InputManager();
-    this.level = new Level(1, 3);
+    this.level = new Level(1, 3); // minFloor, maxFloor
   }
+
   _addEventListeners() {
     window.addEventListener('resize', () => this.renderer?.resizeCanvas());
   }
 
   async triggerGameStart() {
-    // Эта функция вызывается из Menu.js после создания экземпляра Game
     if (this.gameState !== GameState.IDLE) {
-      console.warn(
-        `[Game] triggerGameStart called but game state is ${this.gameState}. Current character: ${this.characterColor}. Aborting.`
-      );
-      // Если игра уже запущена или загружается, не делаем ничего
+      console.warn(`[Game] triggerGameStart called but game state is ${this.gameState}. Aborting.`);
       return;
     }
     console.log(
@@ -137,57 +119,51 @@ export class Game {
     if (loadingOverlay) loadingOverlay.classList.add('visible');
 
     try {
-      // _loadAssetsAndThenStartLogic уже устанавливает GameState.LOADING
       await this._loadAssetsAndThenStartLogic();
-      console.log('[Game] Game start sequence (assets and logic) completed successfully.');
-      // loadingOverlay будет скрыт внутри _loadAssetsAndThenStartLogic или _startGameLogic
+      console.log('[Game] Game start sequence completed successfully.');
     } catch (error) {
       console.error(
-        '[Game] Error during _loadAssetsAndThenStartLogic (called from triggerGameStart):',
+        '[Game] Error during _loadAssetsAndThenStartLogic (from triggerGameStart):',
         error
       );
       if (loadingOverlay) loadingOverlay.classList.remove('visible');
-      // _handleFatalError будет вызван из _loadAssetsAndThenStartLogic, если ошибка там.
-      // Если _handleFatalError не был вызван, а ошибка произошла, делаем это здесь.
       if (this.gameState !== GameState.GAME_OVER) {
+        // Avoid double error handling if already handled
         this._handleFatalError(`Game start process failed: ${error.message}`);
       }
     }
   }
 
   async _loadAssetsAndThenStartLogic() {
-    // Этот метод остается почти таким же
-    const loadingOverlay = UIManager.getLoadingOverlay(); // Получаем еще раз, если нужно
+    const loadingOverlay = UIManager.getLoadingOverlay();
     try {
       this.setGameState(GameState.LOADING);
       if (loadingOverlay && !loadingOverlay.classList.contains('visible')) {
         loadingOverlay.classList.add('visible');
       }
 
-      await this._loadAssets(); // Загрузка спрайтов, изображений
-      await this._startGameLogic(); // Запуск игровой логики, включая музыку
+      await this._loadAssets();
+      await this._startGameLogic();
 
-      // Успешное завершение, скрываем оверлей загрузки (если еще видим)
       if (loadingOverlay) loadingOverlay.classList.remove('visible');
     } catch (error) {
       console.error('[Game] _loadAssetsAndThenStartLogic failed:', error);
-      if (loadingOverlay) loadingOverlay.classList.remove('visible'); // Убираем оверлей при ошибке
+      if (loadingOverlay) loadingOverlay.classList.remove('visible');
       this._handleFatalError(`Asset loading or game logic start error: ${error.message}`);
-      throw error; // Перебрасываем ошибку дальше, чтобы triggerGameStart мог её поймать
+      throw error;
     }
   }
 
   async _loadAssets() {
-    // Этот метод остается почти таким же, использует this.characterColor
     console.log('[Game] Loading assets...');
     const promises = [];
-    const spritePathKey = this.characterColor || 'red'; // Используем выбранный цвет или красный по умолчанию
+    const spritePathKey = this.characterColor || 'red';
     const spritePath = this.sprites[spritePathKey];
 
     if (!spritePath) {
       throw new Error(`Sprite path for character color "${spritePathKey}" is undefined.`);
     }
-    console.log(`[Game] Using sprite path: ${spritePath} for character ${spritePathKey}`);
+    console.log(`[Game] Using sprite: ${spritePath} for character ${spritePathKey}`);
 
     if (!this.ctx) throw new Error('Canvas context not available for Character creation.');
     this.character = new Character(this.ctx, spritePath, {
@@ -217,7 +193,6 @@ export class Game {
       this.bookImage.src = bookSpriteImage;
       promises.push(
         new Promise((resolve) => {
-          // Не используем reject, чтобы игра могла продолжиться без книги
           this.bookImage.onload = () => {
             console.log(`  [Assets] Book image loaded: ${bookSpriteImage}`);
             resolve();
@@ -232,16 +207,14 @@ export class Game {
         })
       );
     } else {
-      console.warn('[Assets] No book sprite path provided. Book will use fallback rendering.');
+      console.warn('[Assets] No book sprite. Fallback rendering will be used.');
       this.bookImage = null;
     }
-
     await Promise.all(promises);
     console.log('[Game] All visual assets loaded successfully.');
   }
 
   async _startGameLogic() {
-    // Этот метод остается почти таким же
     console.log('[Game] Starting core game logic...');
     if (
       !this.level ||
@@ -251,17 +224,16 @@ export class Game {
       !this.gameplayManager ||
       !this.audioManager
     ) {
-      throw new Error('Cannot start game - essential components are missing.');
+      throw new Error('Cannot start game - essential components missing.');
     }
-
     this.setGameState(GameState.LOADING_LEVEL);
 
     try {
       await this.level.loadFloor(this.level.minFloor, this.canvas.width, this.canvas.height);
       const currentMap = this.level.currentMap;
-      if (!currentMap) throw new Error('Failed to load initial map. Map object is null.');
+      if (!currentMap) throw new Error('Failed to load initial map.');
 
-      const startPos = currentMap.findRandomInitialSpawnPosition();
+      const startPos = currentMap.findRandomInitialSpawnPosition(this.character);
       if (!startPos) throw new Error('Failed to find a valid starting position on the map!');
       this.character.x = startPos.x;
       this.character.y = startPos.y;
@@ -270,7 +242,6 @@ export class Game {
 
       this.gameplayManager.ensureCharacterIsOnWalkableTile(false);
 
-      // Сброс состояния игры
       this.totalBooksCollectedGlobally = 0;
       this.availableQuestions = [...questions];
       this.liftCooldownActive = false;
@@ -280,27 +251,20 @@ export class Game {
       this.currentQuestionData = null;
 
       this.renderer.centerCameraOnCharacter();
-
       UIManager.updateScore(this.totalBooksCollectedGlobally, this.targetBooksToWin);
-      UIManager.showGameUI(); // Показывает игровой UI (канвас, очки, контролы и т.д.)
+      UIManager.showGameUI();
 
-      // Добавляем обработчики клавиатуры
       this._boundKeyDownHandler = this.handleKeyDown.bind(this);
       this._boundKeyUpHandler = this.handleKeyUp.bind(this);
       window.addEventListener('keydown', this._boundKeyDownHandler);
       window.addEventListener('keyup', this._boundKeyUpHandler);
 
-      // ЗАПУСК МУЗЫКИ - происходит здесь, ПОСЛЕ взаимодействия пользователя (клик "Play" в Menu.js)
       this.audioManager.startInitialMusic(this.level.currentFloor);
-      console.log(
-        `[Game] Initial music started (or attempted) for floor ${this.level.currentFloor}`
-      );
+      console.log(`[Game] Initial music started for floor ${this.level.currentFloor}`);
 
-      // Устанавливаем состояние игры в PLAYING и запускаем таймер
-      this.setGameState(GameState.PLAYING);
-      UIManager.startTimer(); // UIManager управляет таймером
+      this.setGameState(GameState.PLAYING); // Set state BEFORE starting timer
+      UIManager.startTimer(); // UIManager controls the timer logic
 
-      // Запускаем игровой цикл
       if (!this.isRunning) {
         this.isRunning = true;
         requestAnimationFrame(this.gameLoop);
@@ -308,34 +272,33 @@ export class Game {
       }
     } catch (error) {
       console.error('[Game] Error during _startGameLogic:', error);
-      this._handleFatalError(`Level start process error: ${error.message}`); // Показываем ошибку и Game Over
-      throw error; // Перебрасываем ошибку, чтобы _loadAssetsAndThenStartLogic её увидел
+      this._handleFatalError(`Level start process error: ${error.message}`);
+      throw error;
     }
   }
 
-  // Методы _setGameOver, stopGame, _handleFatalError, handleKeyDown, handleKeyUp, gameLoop, startLiftCooldownTimer
-  // остаются такими же, как в предыдущей полной версии Game.js.
   _setGameOver(win = true) {
     if (this.gameState === GameState.GAME_OVER) return;
-    console.log(`[Game] Setting game over. Win: ${win}`);
+    console.log(`[Game] Game Over. Win: ${win}`); // Log before changing state
     this.setGameState(GameState.GAME_OVER);
     this.isRunning = false;
     if (this.character) this.character.isMoving = false;
     clearTimeout(this.liftCooldownTimer);
     if (this.audioManager) this.audioManager.stopMusic();
+
     if (this._boundKeyDownHandler) window.removeEventListener('keydown', this._boundKeyDownHandler);
     if (this._boundKeyUpHandler) window.removeEventListener('keyup', this._boundKeyUpHandler);
     this._boundKeyDownHandler = null;
     this._boundKeyUpHandler = null;
-    UIManager.stopTimer(win);
+
+    UIManager.stopTimer(win); // Stop timer ONCE
     UIManager.showGameOverScreen(win, Game.CREATOR_NAMES, Game.CLASS_ATTENDING_INFO);
   }
 
   stopGame() {
     console.log('[Game] Explicit stopGame requested.');
-    // Если игра уже закончена, не делаем ничего, чтобы не перезаписать состояние
     if (this.gameState !== GameState.GAME_OVER) {
-      this._setGameOver(false); // Предполагаем, что явный стоп - это не победа
+      this._setGameOver(false);
     } else {
       console.log('[Game] stopGame called, but game is already over.');
     }
@@ -343,34 +306,32 @@ export class Game {
 
   _handleFatalError(message, showAlert = true) {
     console.error('[Game] FATAL ERROR:', message);
-    // Показываем сообщение только если игра не в состоянии GAME_OVER, чтобы избежать дублирования
     if (showAlert && this.gameState !== GameState.GAME_OVER) {
       UIManager.flashMessage(`FATAL ERROR: ${message}`, 'error', 15000);
     }
-    // Важно всегда переводить игру в состояние GAME_OVER при фатальной ошибке
     if (this.gameState !== GameState.GAME_OVER) {
-      this._setGameOver(false); // Показываем экран Game Over
+      this._setGameOver(false);
     }
   }
 
   handleKeyDown(e) {
     if (this.gameState !== GameState.PLAYING || !this.inputManager) return;
-    let keyHandled = false;
+    let handled = false;
     const key = e.key.toLowerCase();
     if (['arrowup', 'w'].includes(key)) {
       this.inputManager.setKey('up', true);
-      keyHandled = true;
+      handled = true;
     } else if (['arrowdown', 's'].includes(key)) {
       this.inputManager.setKey('down', true);
-      keyHandled = true;
+      handled = true;
     } else if (['arrowleft', 'a'].includes(key)) {
       this.inputManager.setKey('left', true);
-      keyHandled = true;
+      handled = true;
     } else if (['arrowright', 'd'].includes(key)) {
       this.inputManager.setKey('right', true);
-      keyHandled = true;
+      handled = true;
     }
-    if (keyHandled) e.preventDefault();
+    if (handled) e.preventDefault();
   }
 
   handleKeyUp(e) {
@@ -392,16 +353,17 @@ export class Game {
 
   startLiftCooldownTimer() {
     clearTimeout(this.liftCooldownTimer);
-    console.log(`[Game] Starting lift cooldown timer: ${LIFT_COOLDOWN_MS}ms.`);
+    console.log(`[Game] Starting lift cooldown: ${LIFT_COOLDOWN_MS}ms.`);
     this.liftCooldownTimer = setTimeout(() => {
       this.liftCooldownActive = false;
       this.liftCooldownTimer = null;
       if (this.gameState === GameState.TRANSITIONING) {
-        this.setGameState(GameState.PLAYING);
+        this.setGameState(GameState.PLAYING); // Back to playing after transition
         UIManager.flashMessage(`Arrived at floor ${this.level?.currentFloor}`, 'success', 1500);
+        // Timer should continue running if it was already running in TRANSITIONING state
       } else {
         console.warn(
-          `[GameTimer] Lift cooldown ended, but game state is ${this.gameState}. No state change applied.`
+          `[GameTimer] Lift cooldown ended, but state is ${this.gameState}. No state change.`
         );
       }
     }, LIFT_COOLDOWN_MS);

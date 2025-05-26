@@ -9,9 +9,9 @@ import {
   questions,
 } from '../utils/constants.js';
 import { UIManager } from '../UI/UIManager.js';
-import { Character } from './Character.js'; // Убедитесь, что Character импортирован
+import { Character } from './Character.js';
 
-const DEBUG_FLOOR_GM = 3; // Для логов GameplayManager
+const DEBUG_GM_FLOOR = null; // Ustaw na numer piętra dla bardziej szczegółowych logów
 
 export class GameplayManager {
   constructor(game) {
@@ -21,81 +21,55 @@ export class GameplayManager {
   }
 
   update(timestamp) {
-    if (this.game.gameState === GameState.PLAYING) {
-      this.updatePlayingState(timestamp);
-    }
+    if (this.game.gameState === GameState.PLAYING) this.updatePlayingState(timestamp);
   }
 
   updatePlayingState(timestamp) {
     const char = this.game.character;
     if (!this.game.level?.currentMap || !char || !this.game.inputManager) return;
-
     const { moved } = this.handleMovement();
-
-    if (char && typeof char.updateAnimation === 'function') {
-      char.updateAnimation(timestamp);
-    }
-
-    if (!moved && this.game.gameState === GameState.PLAYING) {
-      this.handleInteractions();
-    }
+    if (char?.updateAnimation) char.updateAnimation(timestamp);
+    if (!moved && this.game.gameState === GameState.PLAYING) this.handleInteractions();
   }
 
   handleMovement() {
-    const char = this.game.character;
-    const map = this.game.level.currentMap;
-    const input = this.game.inputManager;
+    const char = this.game.character,
+      map = this.game.level.currentMap,
+      input = this.game.inputManager;
     if (!char || !map || !input) return { moved: false };
+    const dir = input.getInputDirection();
+    let dx = dir.x * char.speed,
+      dy = dir.y * char.speed;
+    let actualX = 0,
+      actualY = 0,
+      moved = false;
 
-    const direction = input.getInputDirection();
-    let dx = direction.x * char.speed;
-    let dy = direction.y * char.speed;
-
-    const intendedMove = dx !== 0 || dy !== 0;
-    let actualMoveX = 0;
-    let actualMoveY = 0;
-    let moved = false;
-
-    if (intendedMove) {
+    if (dx !== 0 || dy !== 0) {
       const canMoveX = dx !== 0 && !this.checkCollision(char.x + dx, char.y);
       const canMoveY = dy !== 0 && !this.checkCollision(char.x, char.y + dy);
+      if (canMoveX) actualX = dx;
+      if (canMoveY) actualY = dy;
 
-      if (canMoveX) actualMoveX = dx;
-      if (canMoveY) actualMoveY = dy;
-
-      // Улучшенная обработка диагональной коллизии (скольжение)
-      if (dx !== 0 && dy !== 0) {
-        // Если пытались двигаться по диагонали
-        if (this.checkCollision(char.x + dx, char.y + dy)) {
-          // И диагональ заблокирована
-          if (canMoveX && !canMoveY) {
-            // Можем по X, но не по Y (если бы двигались только по Y)
-            actualMoveY = 0; // Двигаемся только по X
-          } else if (canMoveY && !canMoveX) {
-            // Можем по Y, но не по X
-            actualMoveX = 0; // Двигаемся только по Y
-          } else if (!canMoveX && !canMoveY) {
-            // Не можем ни по X, ни по Y по отдельности
-            actualMoveX = 0;
-            actualMoveY = 0;
-          }
-          // Если можем и по X и по Y отдельно, но не по диагонали, то actualMoveX и actualMoveY уже установлены правильно
+      if (dx !== 0 && dy !== 0 && this.checkCollision(char.x + dx, char.y + dy)) {
+        // Diagonal blocked
+        if (canMoveX && !canMoveY) actualY = 0; // Slide X
+        else if (canMoveY && !canMoveX) actualX = 0; // Slide Y
+        else if (!canMoveX && !canMoveY) {
+          actualX = 0;
+          actualY = 0;
         }
       }
-
-      if (actualMoveX !== 0 || actualMoveY !== 0) {
-        char.x += actualMoveX;
-        char.y += actualMoveY;
+      if (actualX !== 0 || actualY !== 0) {
+        char.x += actualX;
+        char.y += actualY;
         moved = true;
-
-        if (Math.abs(actualMoveX) >= Math.abs(actualMoveY)) {
-          if (actualMoveX !== 0)
+        if (Math.abs(actualX) >= Math.abs(actualY)) {
+          if (actualX !== 0)
             char.currentDirection =
-              actualMoveX > 0 ? Character.Direction.RIGHT : Character.Direction.LEFT;
+              actualX > 0 ? Character.Direction.RIGHT : Character.Direction.LEFT;
         } else {
-          if (actualMoveY !== 0)
-            char.currentDirection =
-              actualMoveY > 0 ? Character.Direction.DOWN : Character.Direction.UP;
+          if (actualY !== 0)
+            char.currentDirection = actualY > 0 ? Character.Direction.DOWN : Character.Direction.UP;
         }
       }
     }
@@ -104,77 +78,60 @@ export class GameplayManager {
   }
 
   checkCollision(targetX, targetY) {
-    const map = this.game.level?.currentMap;
-    const char = this.game.character;
+    const map = this.game.level?.currentMap,
+      char = this.game.character;
     if (!map || !char) return true;
-
-    const collisionBox = char.getCollisionBox(targetX, targetY);
-    // Ключевые точки коллайдера для проверки
-    const pointsToCheck = [
-      { x: collisionBox.left, y: collisionBox.top }, // Левый верхний
-      { x: collisionBox.right, y: collisionBox.top }, // Правый верхний
-      { x: collisionBox.left, y: collisionBox.bottom }, // Левый нижний
-      { x: collisionBox.right, y: collisionBox.bottom }, // Правый нижний
-      // Дополнительные точки для более точной проверки, особенно для узких проходов
-      { x: targetX, y: collisionBox.top }, // Центр верхний
-      { x: targetX, y: collisionBox.bottom }, // Центр нижний
-      { x: collisionBox.left, y: targetY + char.renderSize * char.collisionBoxFeetOffsetRatio }, // Середина левой стороны (на уровне ног)
-      { x: collisionBox.right, y: targetY + char.renderSize * char.collisionBoxFeetOffsetRatio }, // Середина правой стороны (на уровне ног)
+    const box = char.getCollisionBox(targetX, targetY);
+    const points = [
+      { x: box.left, y: box.top },
+      { x: box.right, y: box.top },
+      { x: box.left, y: box.bottom },
+      { x: box.right, y: box.bottom },
+      { x: targetX, y: box.top },
+      { x: targetX, y: box.bottom },
+      { x: box.left, y: targetY + char.renderSize * char.collisionBoxFeetOffsetRatio },
+      { x: box.right, y: targetY + char.renderSize * char.collisionBoxFeetOffsetRatio },
     ];
-
-    for (const point of pointsToCheck) {
-      if (!map.isWalkable(point.x, point.y)) {
-        // console.log(`Collision at world (${point.x.toFixed(1)}, ${point.y.toFixed(1)}) -> tile not walkable.`);
-        return true;
-      }
-    }
+    for (const p of points) if (!map.isWalkable(p.x, p.y)) return true;
     return false;
   }
 
   handleInteractions() {
-    const map = this.game.level?.currentMap;
-    const char = this.game.character;
+    const map = this.game.level?.currentMap,
+      char = this.game.character;
     if (!map || !char || this.game.gameState !== GameState.PLAYING) return;
-
-    const nearbyBook = map.findNearbyUnansweredBook(char.x, char.y);
-    if (nearbyBook) {
-      this.initiateQuestion(nearbyBook);
+    const book = map.findNearbyUnansweredBook(char.x, char.y);
+    if (book) {
+      this.initiateQuestion(book);
       return;
     }
-
     if (!this.game.liftCooldownActive) {
-      const nearbyLift = map.findNearbyLift(char.x, char.y);
-      if (nearbyLift) {
-        this.initiateFloorSelection();
-      }
+      const lift = map.findNearbyLift(char.x, char.y);
+      if (lift) this.initiateFloorSelection();
     }
   }
 
   initiateQuestion(book) {
     if (this.game.gameState !== GameState.PLAYING) return;
-
     this.game.setGameState(GameState.ASKING_QUESTION);
     if (this.game.character) this.game.character.isMoving = false;
     this.game.currentBookTarget = book;
-
     if (this.game.availableQuestions.length === 0) {
       this.game.availableQuestions = [...questions];
       if (this.game.availableQuestions.length === 0) {
-        UIManager.flashMessage('Błąd: Brak dostępnych pytań!', 'error');
+        UIManager.flashMessage('Brak pytań!', 'error');
         this.game.setGameState(GameState.PLAYING);
         this.game.currentBookTarget = null;
         return;
       }
     }
-
-    const qIndex = Math.floor(Math.random() * this.game.availableQuestions.length);
-    this.game.currentQuestionData = this.game.availableQuestions.splice(qIndex, 1)[0];
+    const qIdx = Math.floor(Math.random() * this.game.availableQuestions.length);
+    this.game.currentQuestionData = this.game.availableQuestions.splice(qIdx, 1)[0];
     UIManager.showQuestion(this.game.currentQuestionData);
   }
 
-  handleAnswer(selectedOptionIndex) {
+  handleAnswer(selOptIdx) {
     const { gameState, currentQuestionData, currentBookTarget, level } = this.game;
-
     if (gameState !== GameState.ASKING_QUESTION || !currentQuestionData || !currentBookTarget) {
       UIManager.hideQuestion();
       this.game.currentBookTarget = null;
@@ -182,12 +139,10 @@ export class GameplayManager {
       if (this.game.gameState !== GameState.GAME_OVER) this.game.setGameState(GameState.PLAYING);
       return;
     }
-
-    const isCorrect = selectedOptionIndex === currentQuestionData.correctAnswer;
-    if (isCorrect) {
+    const correct = selOptIdx === currentQuestionData.correctAnswer;
+    if (correct) {
       UIManager.flashMessage('Prawidłowo!', 'success', 1500);
-      const collected = level?.currentMap?.markBookAsCollected(currentBookTarget);
-      if (collected) {
+      if (level?.currentMap?.markBookAsCollected(currentBookTarget)) {
         this.game.totalBooksCollectedGlobally++;
         UIManager.updateScore(this.game.totalBooksCollectedGlobally, this.game.targetBooksToWin);
         if (this.game.totalBooksCollectedGlobally >= this.game.targetBooksToWin) {
@@ -195,14 +150,11 @@ export class GameplayManager {
           this.game._setGameOver(true);
           return;
         }
-      } else {
-        UIManager.flashMessage('Błąd zbierania książki!', 'error');
-      }
+      } else UIManager.flashMessage('Błąd zbierania!', 'error');
     } else {
-      UIManager.flashMessage('Nieprawidłowa odpowiedź!', 'error');
+      UIManager.flashMessage('Nieprawidłowa!', 'error');
       this.game.availableQuestions.push(currentQuestionData);
     }
-
     UIManager.hideQuestion();
     this.game.currentBookTarget = null;
     this.game.currentQuestionData = null;
@@ -220,36 +172,47 @@ export class GameplayManager {
     );
   }
 
-  handleFloorSelection(selectedFloor) {
+  handleFloorSelection(selFloor) {
     if (this.game.gameState !== GameState.SELECTING_FLOOR) {
       UIManager.hideFloorSelectionUI();
       return;
     }
     UIManager.hideFloorSelectionUI();
     if (
-      selectedFloor === this.game.level.currentFloor ||
-      selectedFloor < this.game.level.minFloor ||
-      selectedFloor > this.game.level.maxFloor
+      selFloor === this.game.level.currentFloor ||
+      selFloor < this.game.level.minFloor ||
+      selFloor > this.game.level.maxFloor
     ) {
       this.game.setGameState(GameState.PLAYING);
       return;
     }
-    this.handleLiftTransition(selectedFloor).catch((err) => {
-      this.game._handleFatalError(`Błąd przejścia na piętro: ${err.message}`);
+    this.handleLiftTransition(selFloor).catch((err) => {
+      this.game._handleFatalError(`Błąd przejścia: ${err.message}`);
     });
   }
 
   async handleLiftTransition(targetFloor) {
     const game = this.game;
-    const isDebug = game.level?.currentFloor === DEBUG_FLOOR_GM || targetFloor === DEBUG_FLOOR_GM;
+    const isDebug =
+      this.game.level?.currentFloor === DEBUG_GM_FLOOR || targetFloor === DEBUG_GM_FLOOR;
 
     if (isDebug)
-      console.log(
-        `[GameplayManager F${targetFloor} handleLiftTransition] Starting transition. Cooldown: ${game.liftCooldownActive}`
+      console.log(`[GM F${targetFloor} LiftTrans] Start. Cooldown:${game.liftCooldownActive}`);
+    if (game.liftCooldownActive && game.gameState !== GameState.SELECTING_FLOOR) {
+      if (isDebug)
+        console.warn(
+          `[GM F${targetFloor} LiftTrans] Aborted: Cooldown or invalid state (${game.gameState})`
+        );
+      return;
+    }
+    if (game.gameState === GameState.SELECTING_FLOOR) game.setGameState(GameState.TRANSITIONING);
+    else if (game.gameState !== GameState.TRANSITIONING) {
+      console.warn(
+        `[GM F${targetFloor} LiftTrans] Unexpected state ${game.gameState}. Forcing TRANSITIONING.`
       );
-    if (game.gameState !== GameState.SELECTING_FLOOR || game.liftCooldownActive) return;
+      game.setGameState(GameState.TRANSITIONING);
+    }
 
-    game.setGameState(GameState.TRANSITIONING);
     if (game.character) game.character.isMoving = false;
     UIManager.hideQuestion();
     UIManager.hideFloorSelectionUI();
@@ -258,138 +221,133 @@ export class GameplayManager {
 
     try {
       await game.level.loadFloor(targetFloor, game.canvas.width, game.canvas.height);
-      const newMap = game.level.currentMap;
-      if (!newMap) throw new Error(`Map object is null for floor ${targetFloor}.`);
-
-      const liftPosData = newMap.getLiftPosition();
-      if (!liftPosData) throw new Error(`No lift position data on loaded floor ${targetFloor}!`);
+      const mapInst = game.level.currentMap;
+      if (!mapInst) throw new Error(`Map instance null for F${targetFloor}.`);
+      const liftData = mapInst.getLiftPosition();
+      if (!liftData) throw new Error(`No lift pos data on F${targetFloor}!`);
       if (isDebug)
-        console.log(
-          `  [GM F${targetFloor} LiftTransition] Lift tile: (${liftPosData.tileX},${
-            liftPosData.tileY
-          }), World:(${liftPosData.x.toFixed(1)},${liftPosData.y.toFixed(1)})`
-        );
+        console.log(`  [GM F${targetFloor} LiftTrans] Lift @(${liftData.tileX},${liftData.tileY})`);
 
-      let finalSpawnPos = null;
+      let finalSpawn = null;
+      const liftRoom = mapInst.getRoomContainingTile(liftData.tileX, liftData.tileY);
 
-      finalSpawnPos = newMap.getSpawnPointInRoomOfLift(liftPosData.tileX, liftPosData.tileY, 2);
-      if (isDebug)
-        console.log(
-          `  [GM F${targetFloor} LiftTransition] From getSpawnPointInRoomOfLift:`,
-          finalSpawnPos ? { x: finalSpawnPos.x.toFixed(1), y: finalSpawnPos.y.toFixed(1) } : null
-        );
-
-      if (!finalSpawnPos) {
-        if (isDebug)
-          console.warn(
-            `  [GM F${targetFloor} LiftTransition] getSpawnPointInRoomOfLift failed. Using findNearestWalkableTile...`
-          );
-        finalSpawnPos = newMap.findNearestWalkableTile(liftPosData.x, liftPosData.y, 5, true, true);
+      if (liftRoom) {
         if (isDebug)
           console.log(
-            `  [GM F${targetFloor} LiftTransition] From findNearestWalkableTile:`,
-            finalSpawnPos ? { x: finalSpawnPos.x.toFixed(1), y: finalSpawnPos.y.toFixed(1) } : null
+            `  [GM F${targetFloor} LiftTrans] Lift in room ${
+              liftRoom.id || 'N/A'
+            }. Spawning center.`
           );
-      }
-
-      if (!finalSpawnPos) {
-        if (isDebug)
+        finalSpawn = mapInst.getRoomCenter(liftRoom);
+        if (!finalSpawn) {
           console.error(
-            `  [GM F${targetFloor} LiftTransition] All spawn methods failed. Using random spawn...`
+            `  [GM F${targetFloor} LiftTrans] CRIT: getRoomCenter null for room ${
+              liftRoom.id || 'N/A'
+            }. Fallback.`
           );
-        const emergencySpawn = newMap.findRandomInitialSpawnPosition();
-        if (!emergencySpawn) throw new Error(`EMERGENCY SPAWN FAILED on floor ${targetFloor}!`);
-        finalSpawnPos = emergencySpawn;
-        if (isDebug)
-          console.log(
-            `  [GM F${targetFloor} LiftTransition] From emergencySpawn:`,
-            finalSpawnPos ? { x: finalSpawnPos.x.toFixed(1), y: finalSpawnPos.y.toFixed(1) } : null
-          );
+          finalSpawn = mapInst.getSpawnPointInRoomOfLift(liftData.tileX, liftData.tileY, 1);
+        }
+      } else {
+        console.error(
+          `  [GM F${targetFloor} LiftTrans] CRIT: Lift @(${liftData.tileX},${liftData.tileY}) NOT in any room! Fallback near lift.`
+        );
+        finalSpawn =
+          mapInst.getSpawnPointInRoomOfLift(liftData.tileX, liftData.tileY, 1) ||
+          mapInst.findNearestWalkableTile(liftData.x, liftData.y, 3, true, false);
       }
+      if (!finalSpawn) finalSpawn = { x: liftData.x, y: liftData.y }; // Last resort: lift tile itself
+      if (!finalSpawn) throw new Error(`PANIC: No spawn pos for F${targetFloor}.`);
 
-      game.character.x = finalSpawnPos.x;
-      game.character.y = finalSpawnPos.y;
+      game.character.x = finalSpawn.x;
+      game.character.y = finalSpawn.y;
       if (isDebug)
         console.log(
-          `  [GM F${targetFloor} LiftTransition] Final landing: (${game.character.x.toFixed(
+          `  [GM F${targetFloor} LiftTrans] Initial land (pre-nudge):(${game.character.x.toFixed(
             1
-          )}, ${game.character.y.toFixed(1)})`
+          )},${game.character.y.toFixed(1)})`
         );
-
       game.character.currentDirection = Character.Direction.DOWN;
       game.character.isMoving = false;
+
+      this.ensureCharacterIsOnWalkableTile(false); // allowStandingOnLift=false
+      if (isDebug)
+        console.log(
+          `  [GM F${targetFloor} LiftTrans] Final pos (post-nudge):(${game.character.x.toFixed(
+            1
+          )},${game.character.y.toFixed(1)})`
+        );
+
       game.renderer?.centerCameraOnCharacter();
-      this.ensureCharacterIsOnWalkableTile(false); // <--- ДОБАВЛЕНО: Проверка после телепортации
       game.startLiftCooldownTimer();
     } catch (error) {
-      console.error(`[GM F${targetFloor} LiftTransition] Error during transition:`, error);
+      console.error(`[GM F${targetFloor} LiftTrans] Error:`, error);
       game.liftCooldownActive = false;
-      if (game.gameState !== GameState.GAME_OVER) game.setGameState(GameState.PLAYING);
-      game._handleFatalError(`Transition error to floor ${targetFloor}: ${error.message || error}`);
+      if (
+        game.gameState === GameState.TRANSITIONING ||
+        game.gameState === GameState.SELECTING_FLOOR
+      )
+        game.setGameState(GameState.PLAYING);
+      this.game._handleFatalError(`Transition error to F${targetFloor}: ${error.message || error}`);
     }
   }
 
   ensureCharacterIsOnWalkableTile(allowStandingOnLift = false) {
-    const char = this.game.character;
-    const map = this.game.level?.currentMap;
+    const char = this.game.character,
+      map = this.game.level?.currentMap;
     if (!char || !map) return;
-
-    const currentTileX = Math.floor(char.x / map.tileSize);
-    const currentTileY = Math.floor(char.y / map.tileSize);
-    const currentTileValue =
-      currentTileX >= 0 && currentTileX < map.cols && currentTileY >= 0 && currentTileY < map.rows
-        ? map.map[currentTileY]?.[currentTileX]
-        : TILE_WALL;
-
-    const isCenterTileWalkableByMap = map.isWalkable(char.x, char.y);
-    const isLift = currentTileValue === TILE_LIFT;
-    const isSafeToStandHere = isCenterTileWalkableByMap && (!isLift || allowStandingOnLift);
-    const isCollidingWithWall = this.checkCollision(char.x, char.y); // Проверяем текущую позицию
-    const needsNudge = isCollidingWithWall || !isSafeToStandHere;
+    const cTX = Math.floor(char.x / map.tileSize),
+      cTY = Math.floor(char.y / map.tileSize);
+    const cTV =
+      cTX >= 0 && cTX < map.cols && cTY >= 0 && cTY < map.rows ? map.map[cTY]?.[cTX] : TILE_WALL;
+    const centerWalkable = map.isWalkable(char.x, char.y),
+      isLift = cTV === TILE_LIFT;
+    const safeStand = centerWalkable && (!isLift || allowStandingOnLift);
+    const collidingWall = this.checkCollision(char.x, char.y);
+    const needsNudge = collidingWall || !safeStand;
+    const isDebug = this.game.level?.currentFloor === DEBUG_GM_FLOOR;
 
     if (needsNudge) {
-      const isDebug = this.game.level?.currentFloor === DEBUG_FLOOR_GM;
       if (isDebug)
         console.warn(
-          `[GameplayManager F${this.game.level.currentFloor} AntiStuck] Char at (${char.x.toFixed(
+          `[GM F${this.game.level.currentFloor} AntiStuck] Char@(${char.x.toFixed(
             1
           )},${char.y.toFixed(
             1
-          )}) -> tile (${currentTileX},${currentTileY}) needs nudge. Colliding:${isCollidingWithWall}, SafeStand:${isSafeToStandHere}`
+          )}) tile ${cTV}(${cTX},${cTY}) needs nudge. Collide:${collidingWall},SafeStand:${safeStand}(allowLift:${allowStandingOnLift})`
         );
-
-      const safeSpot = map.findNearestWalkableTile(char.x, char.y, 8, true, true); // excludeLift=true, avoidNarrow=true
-
+      let safeSpot = map.findNearestWalkableTile(char.x, char.y, 8, true, true);
+      if (!safeSpot) {
+        if (isDebug)
+          console.warn(`  [AntiStuck] Initial (avoidNarrow) failed. Retrying allowNarrow...`);
+        safeSpot = map.findNearestWalkableTile(char.x, char.y, 8, true, false);
+      }
+      if (!safeSpot && isLift && !allowStandingOnLift) {
+        if (isDebug)
+          console.warn(`  [AntiStuck] AllowNarrow failed. Trying any spot incl. lift...`);
+        safeSpot = map.findNearestWalkableTile(char.x, char.y, 3, false, false);
+      }
       if (safeSpot) {
         if (isDebug)
           console.log(
-            `  [AntiStuck] Nudging to safe spot: (${safeSpot.x.toFixed(1)},${safeSpot.y.toFixed(
-              1
-            )})`
+            `  [AntiStuck] Nudging to safe:(${safeSpot.x.toFixed(1)},${safeSpot.y.toFixed(1)})`
           );
         char.x = safeSpot.x;
         char.y = safeSpot.y;
         this.game.renderer?.centerCameraOnCharacter();
       } else {
-        if (isDebug)
-          console.error(
-            `  [AntiStuck] CRITICAL: Could not find any safe spot to nudge. Trying random.`
-          );
-        const emergencySpot = map.findRandomInitialSpawnPosition();
-        if (emergencySpot) {
+        if (isDebug) console.error(`  [AntiStuck] CRIT: No safe nudge spot. Random map spawn...`);
+        const emergency = map.findRandomInitialSpawnPosition();
+        if (emergency) {
           if (isDebug)
             console.warn(
-              `  [AntiStuck] Emergency nudge to random: (${emergencySpot.x.toFixed(
-                1
-              )},${emergencySpot.y.toFixed(1)})`
+              `  [AntiStuck] Emergency random:(${emergency.x.toFixed(1)},${emergency.y.toFixed(1)})`
             );
-          char.x = emergencySpot.x;
-          char.y = emergencySpot.y;
+          char.x = emergency.x;
+          char.y = emergency.y;
           this.game.renderer?.centerCameraOnCharacter();
         } else {
-          if (isDebug)
-            console.error('  [AntiStuck] EVEN RANDOM SPAWN FAILED! Game might be broken.');
-          this.game._handleFatalError('Anti-Stuck system failed critically.');
+          if (isDebug) console.error('  [AntiStuck] EVEN RANDOM SPAWN FAILED! Unrecoverable.');
+          this.game._handleFatalError('Anti-Stuck system failed: No spawnable tiles found.');
         }
       }
     }
