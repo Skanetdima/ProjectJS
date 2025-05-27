@@ -1,27 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Student Game</title>
+    <title>Ucieczka z ZSŁ</title>
   </head>
   <body>
     <div class="menu-container">
       <!-- Welcome Section -->
       <div class="welcome-section">
-        <h1>Welcome to Student Game</h1>
+        <h1>Witamy w Ucieczce z ZSŁ</h1>
         <div class="game-description">
           <p>
-            Embark on an exciting adventure through the university campus! Choose your character and
-            navigate through various challenges.
+            Wyrusz na przygodę po ZSŁ. Znajdź drogę do wyjścia, zbieraj książki i unikaj przeszkód. Czy uda Ci się uciec przed końcem lekcji?
           </p>
           <div class="controls-info">
-            <h3>How to Play:</h3>
+            <h3>Jak grać:</h3>
             <ul>
-              <li>Use arrow keys to move your character</li>
-              <li>Collect books to increase your score</li>
-              <li>Avoid obstacles and other students</li>
-              <li>Complete levels to progress through the game</li>
+              <li>Używaj strzałek do poruszania się</li>
+              <li>Zbierz 15 książek aby ukończyć grę</li>
+              <li>Uważaj na przeszkody i dobrze odpowiedz na pytania</li>
+              <li>Poruszaj się między piętrami aby znaleźć kolejne książki</li>
             </ul>
           </div>
         </div>
@@ -29,24 +28,24 @@
       
       <!-- Main Menu Buttons -->
       <div class="main-menu-buttons">
-        <button class="menu-button settings-button"><span class="icon">⚙️</span> Settings</button>
+        <button class="menu-button settings-button"><span class="icon">⚙️</span> Ustawienia</button>
         <!-- The selectedCharacterDisplay will be inserted here by JS -->
-        <button class="menu-button play-button" disabled><span class="icon">▶️</span> Play</button>
+        <button class="menu-button play-button" disabled><span class="icon">▶️</span> Graj</button>
         <button class="menu-button character-button">
-          <span class="icon">👤</span> Choose Character
+          <span class="icon">👤</span> Wybierz postać
         </button>
       </div>
 
       <!-- Settings Panel -->
       <div class="settings-panel ui-panel">
         <button class="panel-close-button" aria-label="Close settings">×</button>
-        <h2>Settings</h2>
+        <h2>Ustawienia</h2>
         <div class="volume-control">
-          <label for="music-volume">Music Volume</label>
+          <label for="music-volume">Głośność muzyki</label>
           <input type="range" id="music-volume" min="0" max="100" value="50" />
         </div>
         <div class="volume-control">
-          <label for="sfx-volume">Sound Effects Volume</label>
+          <label for="sfx-volume">Głośność SFX</label>
           <input type="range" id="sfx-volume" min="0" max="100" value="50" />
         </div>
       </div>
@@ -54,12 +53,12 @@
       <!-- Character Selection Panel -->
       <div class="character-panel ui-panel">
         <button class="panel-close-button" aria-label="Close character selection">×</button>
-        <h2>Choose Your Character</h2>
+        <h2>Wybierz swoją postać</h2>
         <div class="character-grid">
           <div class="character-card" data-character="red">
             <div class="character-preview">
               <img alt="Red Student" />
-              <!-- src буде�� установлен из JS -->
+              <!-- src будет установлен из JS -->
             </div>
             <h3>Technik Programista</h3>
             <p>Napisze wszystko poza CSS-em</p>
@@ -96,9 +95,9 @@
     <canvas id="game-canvas" style="display: none"></canvas>
 
     <div id="game-over-screen" class="ui-panel">
-      <h2 id="game-over-title">Game Over</h2>
+      <h2 id="game-over-title">Koniec gry!</h2>
       <div class="credits-board">
-        <h3>Created by:</h3>
+        <h3>Stworzone przez:</h3>
         <ul id="creator-names">
           <!-- Names will be added via JS -->
         </ul>
@@ -107,14 +106,14 @@
         </p>
       </div>
       <div id="game-over-leaderboard" class="leaderboard">
-        <h3>Best Times</h3>
+        <h3>Najlepsze czasy</h3>
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th>Run</th>
-                <th>Time</th>
-                <th>Date</th>
+                <th>Podejście</th>
+                <th>Czas</th>
+                <th>Data</th>
               </tr>
             </thead>
             <tbody id="leaderboard-body">
@@ -123,7 +122,8 @@
           </table>
         </div>
       </div>
-      <button id="return-to-menu-button" class="menu-button">Return to Menu</button>
+      <button id="return-to-menu-button" class="menu-button">Powrót do menu</button>
     </div>
+    <img id="mikolaj-kopernik" src="<%= require('./assets/images/kopernik.png') %>" alt="Kopernik Logo">
   </body>
 </html>

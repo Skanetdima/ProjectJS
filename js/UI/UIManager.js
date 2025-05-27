@@ -106,7 +106,7 @@ export class UIManager {
       const div = document.createElement('div');
       div.id = 'score-display';
       div.classList.add('score-display');
-      div.innerHTML = `Books: <span id="score-value">0</span> / <span id="score-target">?</span>`;
+      div.innerHTML = `Książki: <span id="score-value">0</span> / <span id="score-target">?</span>`;
       document.body.appendChild(div); // Consider game-specific UI layer
       this.scoreElement = div.querySelector('#score-value');
       this.targetElement = div.querySelector('#score-target');
@@ -248,7 +248,7 @@ export class UIManager {
       }
     }
     if (this.gameOverTitleElement) {
-      this.gameOverTitleElement.textContent = isWin ? 'Congratulations! You Escaped!' : 'Game Over';
+      this.gameOverTitleElement.textContent = isWin ? 'Brawo uciekłeś!' : 'Koniec gry';
       this.gameOverTitleElement.className = isWin ? 'win-title' : 'lose-title';
     }
     if (this.creatorNamesListElement) {
@@ -396,7 +396,7 @@ export class UIManager {
         console.log('[UIManager] Timer element dynamically created.');
       }
     }
-    this.timerElement.textContent = 'Time: 0:00';
+    this.timerElement.textContent = 'Czas: 0:00';
     this.timerElement.style.display = 'none'; // Hidden by default
 
     const savedData = localStorage.getItem('gameLeaderboard');
@@ -453,7 +453,7 @@ export class UIManager {
     const minutes = Math.floor(elapsed / 60);
     const seconds = elapsed % 60;
     if (this.timerElement)
-      this.timerElement.textContent = `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+      this.timerElement.textContent = `Czas: ${minutes}:${seconds.toString().padStart(2, '0')}`;
     this.timerIntervalId = requestAnimationFrame(() => this.updateTimer());
   }
 
@@ -465,10 +465,10 @@ export class UIManager {
     }
     const endTime = Date.now();
     const totalTime = (endTime - this.gameStartTime) / 1000;
-    console.log(`[UIManager] Timer stopped. Time: ${totalTime.toFixed(3)}s. Win: ${wasWin}`);
+    console.log(`[UIManager] Czas zatrzymany. Czas: ${totalTime.toFixed(3)}s. Wygrana: ${wasWin}`);
     if (wasWin) {
       this.leaderboardData.push({
-        name: `Run ${this.leaderboardData.length + 1}`,
+        name: `Podejście ${this.leaderboardData.length + 1}`,
         time: totalTime,
         date: new Date().toLocaleDateString(),
       });

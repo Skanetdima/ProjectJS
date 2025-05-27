@@ -102,7 +102,7 @@ body {
   margin-bottom: 1rem;
 }
 .controls-info {
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: rgba(0, 0, 0, 0.70);
   padding: clamp(0.8rem, 2vw, 1rem);
   border-radius: 6px;
   text-align: left;
@@ -1118,4 +1118,13 @@ canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
   top: 0;
   background: rgba(20, 20, 40, 0.95);
   z-index: 1;
+}
+
+#mikolaj-kopernik {
+  position: fixed;
+  top: 70px;
+  left: 10px;
+  width: 200px;
+  height: auto;
+  z-index: 1100;
 }
