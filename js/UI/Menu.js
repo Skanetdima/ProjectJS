@@ -1,22 +1,23 @@
 // src/UI/Menu.js
-import { Game } from '../Core/Game.js'; // Убедись, что путь к Game.js верный
-import { UIManager } from './UIManager.js'; // UIManager для flash-сообщений и загрузочного оверлея
+import { Game } from '../Core/Game.js';
+import { UIManager } from './UIManager.js';
 
-let currentGameInstance = null; // Переменная для хранения текущего экземпляра игры
+let currentGameInstance = null;
 
 export class Menu {
-  constructor(characterImageSources) {
+  constructor(characterImageSources, kopernikImgSrc) {
+    // Added kopernikImgSrc parameter
     this.characterImageSources = characterImageSources;
+    this.kopernikImgSrc = kopernikImgSrc; // Store the imported image path
     this.selectedCharacter = null;
-    this.userInteracted = false; // Для отслеживания первого взаимодействия
-    this.overlay = null; // Оверлей для модальных окон
-    this.audioManagerInstance = null; // Для хранения экземпляра AudioManager
+    this.userInteracted = false;
+    this.overlay = null;
+    this.audioManagerInstance = null;
 
     console.log('[Menu] Constructor called. Initializing elements...');
     this.initializeElements();
 
     if (this.characterPanel && this.characterGrid) {
-      // Проверка characterGrid важна
       this.setupCharacterImages();
     } else {
       console.error(
@@ -26,18 +27,18 @@ export class Menu {
 
     console.log('[Menu] Adding event listeners...');
     this.addEventListeners();
-    this.show(); // Показываем меню при инициализации
+    this.show();
     console.log('[Menu] Instance created and displayed.');
   }
 
-  // Метод для получения AudioManager из Game.js
+  // Method for getting AudioManager from Game.js
   setAudioManager(audioManager) {
     this.audioManagerInstance = audioManager;
     console.log('[Menu] AudioManager instance received in Menu.');
     if (this.musicVolume && this.audioManagerInstance) {
       this.musicVolume.value = this.audioManagerInstance.getMusicVolume() * 100;
     } else if (this.musicVolume) {
-      // Если AudioManager еще не пришел, но слайдер есть, установим значение из localStorage
+      // If AudioManager is not yet available, but the slider exists, set value from localStorage
       const savedVolume = localStorage.getItem('musicVolume');
       if (savedVolume !== null) {
         this.musicVolume.value = parseFloat(savedVolume) * 100;
@@ -51,7 +52,7 @@ export class Menu {
     this.menuContainer = document.querySelector('.menu-container');
     if (!this.menuContainer) {
       console.error('[Menu Init] CRITICAL: .menu-container not found!');
-      return; // Прерываем, если нет основного контейнера
+      return;
     }
 
     this.settingsButton = this.menuContainer.querySelector('.settings-button');
@@ -64,10 +65,10 @@ export class Menu {
     if (!this.characterButton) console.warn('[Menu Init] .character-button not found.');
     if (!this.settingsButton) console.warn('[Menu Init] .settings-button not found.');
 
-    // Панели лучше искать по всему документу, если они не вложены в .menu-container
+    // Panels should ideally be searched across the entire document if they are not nested within .menu-container
     this.settingsPanel = document.querySelector('.settings-panel');
     if (this.settingsPanel) {
-      // Если панель не в body, перемещаем ее туда для корректного позиционирования fixed
+      // If the panel is not in the body, move it there for correct fixed positioning
       if (
         this.settingsPanel.parentNode !== document.body &&
         this.settingsPanel.parentNode !== this.menuContainer /* allow if nested */
@@ -75,7 +76,7 @@ export class Menu {
         document.body.appendChild(this.settingsPanel.parentNode.removeChild(this.settingsPanel));
       }
       this.musicVolume = this.settingsPanel.querySelector('#music-volume');
-      this.sfxVolume = this.settingsPanel.querySelector('#sfx-volume'); // Оставим, если понадобится
+      this.sfxVolume = this.settingsPanel.querySelector('#sfx-volume'); // Keep if needed
       this.closeSettingsButton = this.settingsPanel.querySelector('.panel-close-button');
       if (!this.musicVolume)
         console.warn('[Menu Init] #music-volume slider not found in settings panel.');
@@ -103,7 +104,7 @@ export class Menu {
       console.error('[Menu Init] CRITICAL: .character-panel not found!');
     }
 
-    // Создаем или находим элемент для отображения выбранного персонажа
+    // Create or find the element for displaying the selected character
     let displayContainer = this.menuContainer.querySelector('.main-menu-buttons');
     this.selectedCharacterDisplay = displayContainer
       ? displayContainer.querySelector('.selected-character-display')
@@ -115,16 +116,30 @@ export class Menu {
       if (this.playButton && this.playButton.parentNode) {
         this.playButton.parentNode.insertBefore(this.selectedCharacterDisplay, this.playButton);
       } else if (displayContainer) {
-        // Вставляем перед второй кнопкой (предполагая, что это Play) или в конец
+        // Insert before the second button (assuming it's Play) or at the end
         displayContainer.insertBefore(
           this.selectedCharacterDisplay,
           displayContainer.children[1] || null
         );
       } else {
-        this.menuContainer.appendChild(this.selectedCharacterDisplay); // крайний случай
+        this.menuContainer.appendChild(this.selectedCharacterDisplay); // fallback
       }
     }
-    this.updateSelectedCharacterDisplay(); // Обновляем текст по умолчанию
+
+    // Find the Kopernik image and set its source
+    this.kopernikImageElement = document.getElementById('mikolaj-kopernik');
+    if (this.kopernikImageElement) {
+      if (this.kopernikImgSrc) {
+        this.kopernikImageElement.src = this.kopernikImgSrc;
+        console.log('[Menu Init] Kopernik image source set.');
+      } else {
+        console.warn('[Menu Init] Kopernik image element found, but no source provided to Menu.');
+      }
+    } else {
+      console.warn('[Menu Init] #mikolaj-kopernik image element not found.');
+    }
+
+    this.updateSelectedCharacterDisplay(); // Update default text
   }
 
   setupCharacterImages() {
@@ -160,12 +175,12 @@ export class Menu {
     });
   }
 
-  // Обработка первого взаимодействия для политики автовоспроизведения
+  // Handle first interaction for autoplay policy
   handleFirstInteraction() {
     if (!this.userInteracted) {
       this.userInteracted = true;
       console.log('[Menu] First user interaction recorded.');
-      // AudioManager будет создан в Game, но это взаимодействие важно для браузера
+      // AudioManager will be created in Game, but this interaction is important for the browser
     }
   }
 
@@ -173,8 +188,8 @@ export class Menu {
     const addInteractiveListener = (element, eventType, handlerFn) => {
       if (element) {
         element.addEventListener(eventType, (event) => {
-          this.handleFirstInteraction(); // Регистрируем взаимодействие
-          handlerFn.call(this, event); // Вызываем обработчик
+          this.handleFirstInteraction(); // Register interaction
+          handlerFn.call(this, event); // Call handler
         });
       } else {
         // console.warn(`[Menu addEventListeners] Element not found for listener: ${element}`);
@@ -198,24 +213,24 @@ export class Menu {
     }
 
     if (this.musicVolume) {
-      // Устанавливаем начальное значение из localStorage, если AudioManager еще не пришел
+      // Set initial value from localStorage if AudioManager is not yet available
       if (!this.audioManagerInstance) {
         const savedVolume = localStorage.getItem('musicVolume');
         if (savedVolume !== null) {
           this.musicVolume.value = parseFloat(savedVolume) * 100;
         } else {
-          this.musicVolume.value = 50; // Дефолтное значение громкости
+          this.musicVolume.value = 50; // Default volume
         }
       }
 
       this.musicVolume.addEventListener('input', (e) => {
-        this.handleFirstInteraction(); // Громкость тоже взаимодействие
+        this.handleFirstInteraction(); // Volume change is also an interaction
         const newVolume = parseFloat(e.target.value) / 100;
         if (this.audioManagerInstance) {
           this.audioManagerInstance.setMusicVolume(newVolume);
           console.log(`[Menu] Music volume changed via slider to: ${newVolume}`);
         } else {
-          // Если AudioManager еще не здесь, сохраняем в localStorage, Game->AudioManager подхватит
+          // If AudioManager is not here yet, save to localStorage, Game->AudioManager will pick it up
           localStorage.setItem('musicVolume', newVolume.toString());
           console.warn(
             '[Menu] Music volume slider changed, AudioManager not available. Saved to localStorage.'
@@ -225,7 +240,7 @@ export class Menu {
     }
 
     if (this.sfxVolume) {
-      /* ... обработчик для SFX ... */
+      /* ... handler for SFX ... */
     }
 
     if (this.characterGrid) {
@@ -291,7 +306,7 @@ export class Menu {
       const imgSrc = this.characterImageSources[characterKey];
       let displayedName = characterKey.charAt(0).toUpperCase() + characterKey.slice(1);
 
-      // Пытаемся получить более полное имя из карточки
+      // Try to get a fuller name from the card
       if (this.characterGrid) {
         const selectedCardH3 = this.characterGrid.querySelector(
           `.character-card[data-character="${characterKey}"] h3`
@@ -318,7 +333,7 @@ export class Menu {
     }
     this.settingsPanel.classList.add('visible');
     if (this.characterPanel?.classList.contains('visible')) this.closeCharacterModal();
-    this._ensureOverlay().classList.add('visible'); // Показываем оверлей и для настроек
+    this._ensureOverlay().classList.add('visible'); // Show overlay also for settings
 
     if (this.musicVolume && this.audioManagerInstance) {
       this.musicVolume.value = this.audioManagerInstance.getMusicVolume() * 100;
@@ -330,15 +345,15 @@ export class Menu {
 
   closeSettings() {
     this.settingsPanel?.classList.remove('visible');
-    this.overlay?.classList.remove('visible'); // Скрываем оверлей
+    this.overlay?.classList.remove('visible'); // Hide overlay
   }
 
   _ensureOverlay() {
     if (!this.overlay) {
       this.overlay = document.createElement('div');
-      this.overlay.className = 'ui-modal-overlay'; // Общий класс для оверлея
+      this.overlay.className = 'ui-modal-overlay'; // Common class for overlay
       this.overlay.addEventListener('click', (e) => {
-        // Закрываем активную модалку при клике на оверлей
+        // Close active modal on overlay click
         if (e.target === this.overlay) {
           if (this.characterPanel?.classList.contains('visible')) this.closeCharacterModal();
           if (this.settingsPanel?.classList.contains('visible')) this.closeSettings();
@@ -363,70 +378,70 @@ export class Menu {
       return;
     }
 
-    const loadingOverlay = UIManager.getLoadingOverlay(); // UIManager управляет им
+    const loadingOverlay = UIManager.getLoadingOverlay(); // UIManager manages it
     if (loadingOverlay) loadingOverlay.classList.add('visible');
 
-    this.hide(); // Скрываем меню
+    this.hide(); // Hide menu
 
     const gameCanvas = document.getElementById('game-canvas');
     if (gameCanvas) {
-      gameCanvas.style.display = 'block'; // Показываем канвас
+      gameCanvas.style.display = 'block'; // Show canvas
     } else {
       console.error('[Menu] CRITICAL: #game-canvas not found!');
       if (loadingOverlay) loadingOverlay.classList.remove('visible');
-      this.show(); // Показываем меню обратно, если канваса нет
+      this.show(); // Show menu back if canvas is missing
       return;
     }
 
     try {
-      // Если есть старая игра, останавливаем её (хотя reload на Game Over лучше)
+      // If there's an old game, stop it (though reload on Game Over is better)
       if (currentGameInstance && typeof currentGameInstance.stopGame === 'function') {
         console.log('[Menu] Stopping previous game instance.');
-        currentGameInstance.stopGame(); // Это покажет Game Over экран старой игры
-        currentGameInstance = null; // Очищаем ссылку
-        // Может потребоваться небольшая задержка, чтобы DOM старой игры успел очиститься,
-        // но обычно reload() на Game Over решает эту проблему лучше.
+        currentGameInstance.stopGame(); // This will show the Game Over screen of the old game
+        currentGameInstance = null; // Clear reference
+        // A slight delay might be needed for the old game's DOM to clear,
+        // but typically reload() on Game Over solves this better.
       }
 
       console.log(`[Menu] Creating new Game instance with character: ${this.selectedCharacter}`);
-      currentGameInstance = new Game(this.selectedCharacter); // Передаем цвет
+      currentGameInstance = new Game(this.selectedCharacter); // Pass color
 
-      // В конструкторе Game создается AudioManager. Game должен передать его обратно в Menu.
-      // Для этого в Game.js должен быть вызов menuInstance.setAudioManager(this.audioManager);
-      // Это требует, чтобы Game знал о menuInstance. Проще, если Game сам управляет UI громкости
-      // через UIManager, или если Menu напрямую использует localStorage для начальной установки громкости,
-      // а AudioManager при старте читает из localStorage.
+      // In the Game constructor, AudioManager is created. Game should pass it back to Menu.
+      // For this, Game.js needs to call menuInstance.setAudioManager(this.audioManager);
+      // This requires Game to know about menuInstance. It's simpler if Game itself manages UI volume
+      // via UIManager, or if Menu directly uses localStorage for initial volume setting,
+      // and AudioManager reads from localStorage on startup.
 
-      // ВАЖНО: Game.js должен сам вызвать свой triggerGameStart() после своей инициализации.
-      // Menu.js просто создает экземпляр Game.
-      // Если Game не запускает triggerGameStart() автоматически из конструктора (что сейчас так),
-      // то Menu должен его вызвать:
+      // IMPORTANT: Game.js should call its triggerGameStart() after its initialization.
+      // Menu.js just creates a Game instance.
+      // If Game does not automatically start triggerGameStart() from its constructor (which is the case now),
+      // then Menu must call it:
       if (currentGameInstance && typeof currentGameInstance.triggerGameStart === 'function') {
-        await currentGameInstance.triggerGameStart(); // Запускаем процесс загрузки и старта игры
+        await currentGameInstance.triggerGameStart(); // Start the game loading and start process
       } else {
         throw new Error('Game instance created, but triggerGameStart is not available.');
       }
 
-      // После успешного currentGameInstance.triggerGameStart()
-      // loadingOverlay будет скрыт внутри логики Game.js
+      // After successful currentGameInstance.triggerGameStart()
+      // loadingOverlay will be hidden within Game.js logic
     } catch (error) {
       console.error('[Menu] Error during game initialization or start:', error);
       UIManager.flashMessage(`Game Start Failed: ${error.message}`, 'error', 10000);
       if (loadingOverlay) loadingOverlay.classList.remove('visible');
-      this.show(); // Показываем меню обратно
-      if (gameCanvas) gameCanvas.style.display = 'none'; // Скрываем канвас
+      this.show(); // Show menu back
+      if (gameCanvas) gameCanvas.style.display = 'none'; // Hide canvas
       currentGameInstance = null;
     }
   }
 
   show() {
-    if (this.menuContainer) this.menuContainer.style.display = 'flex'; // или 'block'
-    // Убедимся, что игровые элементы скрыты, если показываем меню
+    if (this.menuContainer) this.menuContainer.style.display = 'flex'; // or 'block'
+    // Ensure game elements are hidden when showing menu
     const gameCanvas = document.getElementById('game-canvas');
     if (gameCanvas) gameCanvas.style.display = 'none';
-    UIManager.hideGameUI(); // Скрывает контролы, очки, таймер
+    UIManager.hideGameUI(); // Hides controls, score, timer
     UIManager.hideGameOverScreen();
-    // Загрузочный оверлей тоже лучше скрыть, если мы в меню
+    // Loading overlay should also be hidden if we are in the menu
     const loadingOverlay = UIManager.getLoadingOverlay();
     if (loadingOverlay) loadingOverlay.classList.remove('visible');
   }
@@ -436,5 +451,5 @@ export class Menu {
   }
 }
 
-// Экспортируем Menu и currentGameInstance (если он нужен где-то еще, хотя лучше избегать глобальных ссылок)
+// Export Menu and currentGameInstance (if needed elsewhere, though avoiding global references is better)
 export { currentGameInstance };
