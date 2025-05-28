@@ -1,5 +1,5 @@
 // src/UI/Menu.js
-import { Game } from '../core/Game.js'; // Убедись, что путь к Game.js верный
+import { Game } from '../Core/Game.js'; // Убедись, что путь к Game.js верный
 import { UIManager } from './UIManager.js'; // UIManager для flash-сообщений и загрузочного оверлея
 
 let currentGameInstance = null; // Переменная для хранения текущего экземпляра игры
