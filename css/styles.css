@@ -102,7 +102,7 @@ body {
   margin-bottom: 1rem;
 }
 .controls-info {
-  background-color: rgba(0, 0, 0, 0.70);
+  background-color: rgba(0, 0, 0, 0.7);
   padding: clamp(0.8rem, 2vw, 1rem);
   border-radius: 6px;
   text-align: left;
@@ -350,7 +350,7 @@ canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
 .controls-container {
   position: fixed;
   bottom: clamp(1rem, 4vh, 2rem);
-  right: clamp(1rem, 4vw, 2rem);
+  left: clamp(1rem, 4vw, 2rem);
   display: none;
   grid-template-areas:
     '. up .'
@@ -1122,8 +1122,8 @@ canvas#game-canvas, canvas#gameCanvas /* Support both IDs if one changes */ {
 
 #mikolaj-kopernik {
   position: fixed;
-  top: 70px;
-  left: 10px;
+  bottom: 70px;
+  right: 10px;
   width: 200px;
   height: auto;
   z-index: 1100;
